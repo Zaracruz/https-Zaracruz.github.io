@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Music Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>Echoes Of Emotion</h1>
+</header>
+<ul class="topnav">
+    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/%3C!DOCTYPE%20html%3E.html#"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/home.png" alt="My Icon" style="width:40px; height:40px;">
+</a></li>
+
+    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/Settings.html"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/settings.png" alt="My Icon" style="width:40px; height:40px;">
+</a></li>
+
+<div class="dropdown">
+  <button class="dropbtn"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/dropdown.png" alt="My Icon" style="width:40px; height:40px;"></button>
+  <div class="dropdown-content">
+    <a href="#">Link 1</a>
+    <a href="#">Link 2</a>
+    <a href="#">Link 3</a>
+  </div>
+</div>
+
+</ul>
+
+    <div id="canvas-container"></div>
+    <div id="controls">
+        <label> Emotion Detection Visualizer</label>
+        <input type="file" id="audioFile" accept="audio/*">
+        <button onclick="document.getElementById('audioFile').click()">Upload Music</button>
+        <button id="playBtn">Play</button>
+        <div id="info"></div>
+        <div id="emotion-display"></div>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

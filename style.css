@@ -1,0 +1,163 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: rgba(2, 0, 12, 0.895);
+    overflow: hidden;
+}
+
+header {
+    background-color: #050225;
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+}
+
+h1 {
+    margin: 0;
+    padding: 0;
+    color:rgba(245, 244, 248, 0.895);
+}
+
+ul.topnav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    background-color: #050225;
+    width: 100%;
+}
+
+ul.topnav li {
+    margin: 0;
+    padding: 0;
+}
+
+ul.topnav li a {
+    display: block;
+    color: #f1f1f1;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+ul.topnav li a:hover {
+    background-color: #9b70df;
+}
+
+.dropbtn {
+  background-color: #050225;
+  color: white;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-content a:hover {background-color: #d4d1fd;}
+
+.dropdown:hover .dropdown-content {display: block;}
+
+.dropdown:hover .dropbtn {background-color: #9b70df;}
+
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+#controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: rgba(203, 158, 228, 0.2);
+    padding: 20px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    max-width: 300px;
+    text-align: center;
+}
+
+button {
+    background-color: rgba(1, 0, 12, 0.895);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 5px;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(197, 104, 104, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+input[type="file"] {
+    display: none;
+}
+
+label {
+    color: white;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+#info {
+    color: white;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+#emotion-display {
+    color: white;
+    margin-top: 10px;
+    font-size: 13px;
+    background: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.emotion-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
