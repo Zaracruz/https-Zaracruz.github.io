@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Music Visualizer</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="/manifest.json">
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered!', reg))
+        .catch(err => console.log('Service Worker failed:', err));
+    });
+  }
+</script>
 </head>
 <body>
 
@@ -12,14 +22,14 @@
     <h1>Echoes Of Emotion</h1>
 </header>
 <ul class="topnav">
-    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/%3C!DOCTYPE%20html%3E.html#"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/home.png" alt="My Icon" style="width:40px; height:40px;">
+    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/%3C!DOCTYPE%20html%3E.html#"><img src="/home/idad/Desktop/Echoes Of Emotion/https-Zaracruz.github.io/icons/home.png" alt="My Icon" style="width:40px; height:40px;">
 </a></li>
 
-    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/Settings.html"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/settings.png" alt="My Icon" style="width:40px; height:40px;">
+    <li><a href="file:///home/idad/Desktop/FYP/FinalProject/Intermediate%20Demo/Settings.html"><img src="/home/idad/Desktop/Echoes Of Emotion/https-Zaracruz.github.io/icons/settings.png" alt="My Icon" style="width:40px; height:40px;">
 </a></li>
 
 <div class="dropdown">
-  <button class="dropbtn"><img src="/home/idad/Desktop/FYP/FinalProject/Intermediate Demo/icons/dropdown.png" alt="My Icon" style="width:40px; height:40px;"></button>
+  <button class="dropbtn"><img src="/home/idad/Desktop/Echoes Of Emotion/https-Zaracruz.github.io/icons/dropdown.png" alt="My Icon" style="width:40px; height:40px;"></button>
   <div class="dropdown-content">
     <a href="#">Link 1</a>
     <a href="#">Link 2</a>

@@ -1,0 +1,15 @@
+{
+  "short_name": "Echoes of Emotion",
+  "name": "Music Visualizer App",
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icons/App_icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}
