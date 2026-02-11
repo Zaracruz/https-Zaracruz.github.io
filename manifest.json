@@ -1,15 +1,23 @@
 {
-  "short_name": "Echoes of Emotion",
+  "id": "/",
   "name": "Music Visualizer App",
+  "short_name": "Echoes",
+  "description": "An interactive music visualizer that reacts to emotion and sound.",
   "start_url": "/",
-  "background_color": "#ffffff",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "theme_color": "#02000C",
   "icons": [
     {
       "src": "/icons/App_icon.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/App_icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
