@@ -27,6 +27,19 @@ const emotions = {
     
 };
 
+
+//haptics function
+function triggerHaptic(strength = 1) {
+    if (!document.getElementById("hapticsToggle").checked) return;
+    
+    if (!("vibrate" in navigator)) return;
+
+    // Map strength (0–1) to vibration duration (20–120ms)
+    const duration = 20 + strength * 100;
+
+    navigator.vibrate(duration);
+}
+
 // Initialize Three.js scene
 function init() {
     scene = new THREE.Scene();
@@ -36,16 +49,7 @@ function init() {
     canvas.width = 2;
     canvas.height = 512;
     const context = canvas.getContext('2d');
-    
-    //const gradient = context.createLinearGradient(0, 0, 0, 512);
-   // gradient.addColorStop(0, '#1a0033');
-    //gradient.addColorStop(0.3, '#2d1b69');
-    //gradient.addColorStop(0.6, '#1e3a8a');
-    //gradient.addColorStop(1, '#0f172a');
-    
-    //context.fillStyle = gradient;
-    //context.fillRect(0, 0, 2, 512);
-    
+ 
     const texture = new THREE.CanvasTexture(canvas);
     const color2 = new THREE.Color("#100c6b");
     scene.background = color2;
@@ -118,6 +122,11 @@ function detectBeat(dataArray) {
     if (bassAverage > 140) {
         const now = Date.now();
         if (now - lastBeatTime > 200) {
+
+            // Trigger haptic feedback on beat
+            const intensity = Math.min(1, bassAverage / 255);
+            triggerHaptic(intensity);
+
             beatTimes.push(now);
             lastBeatTime = now;
             
