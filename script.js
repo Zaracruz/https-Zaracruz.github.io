@@ -1,7 +1,7 @@
 let scene, camera, renderer, mesh;
 let audioContext, analyser, audioSource, dataArray;
-let audio = new Audio();
-let isPlaying = false;
+let isListening = false;
+
 
 // BPM and emotion detection variables 
 // need to add pitch
@@ -345,69 +345,45 @@ function resetForNewSong() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
-    
-    if (analyser && isPlaying) {
+
+    if (analyser && isListening) {
+
         analyser.getByteFrequencyData(dataArray);
-        
-        // Calculate energy level from all frequencies
+
         const sum = dataArray.reduce((a, b) => a + b, 0);
         currentEnergy = sum / dataArray.length;
 
-    if (currentEnergy < 15) {
-        document.getElementById("emotion-display").innerHTML =
-        " Listening... No sound detected. Try playing music.";
-    return;
-}
-        
-        // Detect beats
+        detectSilence(currentEnergy);
         detectBeat(dataArray);
-        
-        // Check emotion every 1.5 seconds
+
         const now = Date.now();
         if (now - lastEmotionCheck > 1500) {
-            // Use current BPM (or estimate from energy if BPM not detected yet)
+
             const effectiveBPM = bpm > 0 ? bpm : Math.round(currentEnergy * 0.8);
             const emotion = detectEmotion(effectiveBPM, currentEnergy);
-            
-            // Add emotion if it's new
+
             if (!detectedEmotions.includes(emotion)) {
                 detectedEmotions.push(emotion);
                 updateMeshGradient();
-                updateEmotionDisplay();
-            } else {
-                // Update display even if emotion hasn't changed
-                updateEmotionDisplay();
             }
-            
+
+            updateEmotionDisplay();
             lastEmotionCheck = now;
         }
 
-        if (analyser && isPlaying) {
-            analyser.getByteFrequencyData(dataArray);
-    
-            const sum = dataArray.reduce((a, b) => a + b, 0);
-            currentEnergy = sum / dataArray.length;
-    
-            // Add silence detection
-            detectSilence(currentEnergy);
-    
-            detectBeat(dataArray);
-        }
-        
-        // Scale mesh based on audio intensity
         const scale = 1 + (currentEnergy / 255) * 0.4;
         mesh.scale.set(scale, scale, scale);
-        
-        // Rotate mesh based on energy
+
         const rotationSpeed = 0.003 + (currentEnergy / 255) * 0.01;
         mesh.rotation.x += rotationSpeed;
         mesh.rotation.y += rotationSpeed * 1.3;
+
     } else {
-        // Idle rotation when no music
+
         mesh.rotation.x += 0.005;
         mesh.rotation.y += 0.0065;
     }
-    
+
     renderer.render(scene, camera);
 }
 
