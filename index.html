@@ -4,63 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Music Visualizer</title>
+
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#02000C">
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => console.log("Service Worker Registered"));
-  }
-</script>
+
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./service-worker.js")
+          .then(() => console.log("Service Worker Registered"));
+      }
+    </script>
 </head>
+
 <body>
 
 <header>
     <h1>Echoes Of Emotion</h1>
 </header>
+
 <ul class="topnav">
-    <li><a href="./index.html"><img src="./icons/home.png" alt="My Icon" style="width:40px; height:40px;">
-</a></li>
+    <li>
+        <a href="./index.html">
+            <img src="./icons/home.png" style="width:40px;height:40px;">
+        </a>
+    </li>
 
-    <li><a href="./Settings.html"><img src="./icons/settings.png" alt="My Icon" style="width:40px; height:40px;">
-</a></li>
-
-<div class="dropdown">
-  <button class="dropbtn"><img src="./icons/dropdown.png" alt="My Icon" style="width:40px; height:40px;"></button>
-  <div class="dropdown-content">
-    <a href="#">Link 1</a>
-    <a href="#">Link 2</a>
-    <a href="#">Link 3</a>
-  </div>
-</div>
-
+    <li>
+        <a href="./Settings.html">
+            <img src="./icons/settings.png" style="width:40px;height:40px;">
+        </a>
+    </li>
 </ul>
 
-    <div id="canvas-container"></div>
-    <div id="controls">
-      <label> Emotion Detection Visualizer</label>
-
-      <input type="file" id="audioFile" accept="audio/*">
-      <button onclick="document.getElementById('audioFile').click()">Upload Music</button>
-
-      <button id="playBtn">Play</button>
-
-      <!---<button id="liveBtn">Start Live Listening</button>-->
-
-      <div id="info"></div>
-      <div id="emotion-display"></div>
-  </div>
-
+<!-- CANVAS -->
 <div id="canvas-container"></div>
 
-<!-- THREE CANVAS -->
-<div id="canvas-container"></div>
-
-<!-- CONTROLS -->
+<!-- CONTROLS SECTION -->
 <div id="controls">
     <label>Live Emotion Detection Visualizer</label>
-    <button id="listenBtn">Start Listening </button>
+    <button id="listenBtn">Start Listening 🎤</button>
 
     <div id="info"></div>
     <div id="emotion-display">
@@ -68,13 +51,11 @@
     </div>
 </div>
 
-
-
+<!-- LOAD THREE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="app.js"></script>
 
+<!-- LOAD JS FILE -->
+<script src="script.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>
