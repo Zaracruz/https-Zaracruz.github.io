@@ -73,11 +73,14 @@ function init() {
     camera.position.z = 8;
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     
     // Create single sphere mesh with vertex colors for gradient
+    let sphereRadius = window.innerWidth < 600 ? 2.2 : 3;
     const geometry = new THREE.SphereGeometry(3, 64, 64);
+
     const material = new THREE.MeshPhongMaterial({ 
         vertexColors: true,
         shininess: 0.1,
@@ -337,7 +340,7 @@ function animate() {
             const effectiveBPM = bpm > 0 ? bpm : Math.round(currentEnergy * 0.8);
             const pitch = detectPitch();
             const emotion = detectEmotion(effectiveBPM, currentEnergy, pitch);
-            
+
             if (!detectedEmotions.includes(emotion)) {
                 detectedEmotions.push(emotion);
                 updateMeshGradient();
@@ -363,11 +366,23 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+//responsiveness
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const aspect = window.innerWidth / window.innerHeight;
+
+    camera.aspect = aspect;
+
+    // Adjust camera distance based on screen size
+    if (window.innerWidth < 600) {
+        camera.position.z = 10; // pull back on mobile
+    } else {
+        camera.position.z = 8;
+    }
+
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
 
 //Button
 document.getElementById("listenBtn").addEventListener("click", async function () {
