@@ -19,26 +19,8 @@ const emotions = {
     happy: { bpmRange: [100, 140], energyRange: [100, 180], color: 0xFFD700, name: 'Happy' },
     energetic: { bpmRange: [130, 170], energyRange: [150, 220], color: 0xFF6B6B, name: 'Energetic' },
     intense: { bpmRange: [150, 220], energyRange: [180, 255], color: 0xFF4500, name: 'Intense' }
-    //love
-    //disgust
-    //anger
-    //make colors disappear if they are not detected in that moment in the song
-    //go back to idle when nothing is playing or detected  
     
 };
-
-
-//haptics function
-function triggerHaptic(strength = 1) {
-    if (!document.getElementById("hapticsToggle").checked) return;
-    
-    if (!("vibrate" in navigator)) return;
-
-    // Map strength (0–1) to vibration duration (20–120ms)
-    const duration = 20 + strength * 100;
-
-    navigator.vibrate(duration);
-}
 
 // Initialize Three.js scene
 function init() {
@@ -97,18 +79,19 @@ function init() {
 }
 
 // Setup audio analysis
-function setupAudio() {
+async function setupAudio(){
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    
+    analyser.fftSize = 1024;
+
     const bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
-    
-    audioSource = audioContext.createMediaElementSource(audio);
+
+    audioSource = audioContext.createMediaStreamSource(stream);
     audioSource.connect(analyser);
-    analyser.connect(audioContext.destination);
 }
+
 
 // Detect beats and calculate BPM
 function detectBeat(dataArray) {
@@ -124,8 +107,8 @@ function detectBeat(dataArray) {
         if (now - lastBeatTime > 200) {
 
             // Trigger haptic feedback on beat
-            const intensity = Math.min(1, bassAverage / 255);
-            triggerHaptic(intensity);
+            //const intensity = Math.min(1, bassAverage / 255);
+            //triggerHaptic(intensity);
 
             beatTimes.push(now);
             lastBeatTime = now;
@@ -150,6 +133,35 @@ function detectBeat(dataArray) {
         }
     }
 }
+
+//Pitch detection 
+
+function detectPitch(){
+    const buffer = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buffer);
+
+    let bestOffset = -1;
+    let bestCorrelation = 0;
+
+    for(let offset=20; offset<1000; offset++){
+        let correlation = 0;
+        for(let i=0;i<buffer.length-offset;i++){
+            correlation += buffer[i]*buffer[i+offset];
+        }
+        correlation /= (buffer.length-offset);
+
+        if(correlation > bestCorrelation){
+            bestCorrelation = correlation;
+            bestOffset = offset;
+        }
+    }
+
+    if(bestOffset > 0){
+        return Math.round(audioContext.sampleRate/bestOffset);
+    }
+    return 0;
+}
+
 
 // Detect emotion based on BPM and energy
 function detectEmotion(bpm, energy) {
@@ -264,26 +276,6 @@ function updateEmotionDisplay() {
     display.innerHTML = html;
 }
 
-// Handle file upload
-document.getElementById('audioFile').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const url = URL.createObjectURL(file);
-        audio.src = url;
-        
-        if (!audioContext) {
-            setupAudio();
-        }
-        
-        // Reset detection
-        beatTimes = [];
-        detectedEmotions = [];
-        bpm = 0;
-        lastEmotionCheck = 0;
-        
-        document.getElementById('info').textContent = `Loaded: ${file.name}`;
-    }
-});
 
 // Silence detection variables
 let silenceThreshold = 30; // Adjust based on testing
@@ -327,23 +319,6 @@ function resetForNewSong() {
     document.getElementById('emotion-display').innerHTML = '<div>Waiting for new song...</div>';
 }
 
-// Play/Pause button
-document.getElementById('playBtn').addEventListener('click', function() {
-    if (!audio.src) {
-        document.getElementById('info').textContent = 'Please load a music file first';
-        return;
-    }
-    
-    if (isPlaying) {
-        audio.pause();
-        this.textContent = 'Play';
-        isPlaying = false;
-    } else {
-        audio.play();
-        this.textContent = 'Pause';
-        isPlaying = true;
-    }
-});
 
 // Animation loop
 function animate() {
@@ -413,5 +388,20 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
+
+//Button
+document.getElementById("listenBtn").addEventListener("click", async function(){
+    if(!isListening){
+        await setupAudio();
+        isListening = true;
+        this.textContent = "Stop Listening ";
+    }else{
+        audioContext.close();
+        isListening = false;
+        this.textContent = "Start Listening ";
+        document.getElementById("emotion-display").innerHTML = "Stopped";
+    }
+});
+
 
 init();

@@ -39,14 +39,39 @@
 
     <div id="canvas-container"></div>
     <div id="controls">
-        <label> Emotion Detection Visualizer</label>
-        <input type="file" id="audioFile" accept="audio/*">
-        <button onclick="document.getElementById('audioFile').click()">Upload Music</button>
-        <button id="playBtn">Play</button>
-        <div id="info"></div>
-        <div id="emotion-display"></div>
-    </div>
+      <label> Emotion Detection Visualizer</label>
 
+      <input type="file" id="audioFile" accept="audio/*">
+      <button onclick="document.getElementById('audioFile').click()">Upload Music</button>
+
+      <button id="playBtn">Play</button>
+
+      <!---<button id="liveBtn">Start Live Listening</button>-->
+
+      <div id="info"></div>
+      <div id="emotion-display"></div>
+  </div>
+
+<div id="canvas-container"></div>
+
+<!-- THREE CANVAS -->
+<div id="canvas-container"></div>
+
+<!-- CONTROLS -->
+<div id="controls">
+    <label>Live Emotion Detection Visualizer</label>
+    <button id="listenBtn">Start Listening </button>
+
+    <div id="info"></div>
+    <div id="emotion-display">
+        Press "Start Listening" to analyze live audio
+    </div>
+</div>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="app.js"></script>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
