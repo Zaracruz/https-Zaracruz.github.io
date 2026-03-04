@@ -69,7 +69,7 @@ function init() {
     const color2 = new THREE.Color("#100c6b");
     scene.background = color2;
     
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 8;
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -79,7 +79,7 @@ function init() {
     
     // Create single sphere mesh with vertex colors for gradient
     let sphereRadius = window.innerWidth < 600 ? 2.2 : 3;
-    const geometry = new THREE.SphereGeometry(3, 64, 64);
+    const geometry = new THREE.SphereGeometry(2.6, 64, 64);
 
     const material = new THREE.MeshPhongMaterial({ 
         vertexColors: true,
@@ -368,21 +368,27 @@ function animate() {
 
 //responsiveness
 function onWindowResize() {
-    const aspect = window.innerWidth / window.innerHeight;
 
-    camera.aspect = aspect;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
-    // Adjust camera distance based on screen size
-    if (window.innerWidth < 600) {
-        camera.position.z = 10; // pull back on mobile
+    camera.aspect = width / height;
+
+    // Dynamic camera distance based on aspect ratio
+    const aspect = width / height;
+
+    if (aspect < 0.75) {
+        // Very tall screen (iPhone portrait)
+        camera.position.z = 12;
+    } else if (aspect < 1) {
+        camera.position.z = 10;
     } else {
         camera.position.z = 8;
     }
 
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
 }
-
 
 //Button
 document.getElementById("listenBtn").addEventListener("click", async function () {
