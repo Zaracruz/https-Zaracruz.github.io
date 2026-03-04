@@ -1,6 +1,7 @@
 let scene, camera, renderer, mesh;
 let audioContext, analyser, audioSource, dataArray;
 let isListening = false;
+let beatPulse = 0;
 
 
 // BPM and emotion detection variables 
@@ -79,12 +80,14 @@ function init() {
     
     // Create single sphere mesh with vertex colors for gradient
     let sphereRadius = window.innerWidth < 600 ? 2.2 : 3;
-    const geometry = new THREE.SphereGeometry(2.6, 64, 64);
+    const geometry = new THREE.CircleGeometry(5, 128);
+    geometry.rotateX(-Math.PI / 2); // horizontal
 
-    const material = new THREE.MeshPhongMaterial({ 
-        vertexColors: true,
-        shininess: 0.1,
-        specular: 0x555555
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x6B9BD1,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.8
     });
     
     // Initialize vertex colors
@@ -131,35 +134,51 @@ async function setupAudio(){
 
 // Detect beats and calculate BPM
 function detectBeat(dataArray) {
-    // Focus on bass frequencies for beat detection
+
     let bassSum = 0;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {  // wider bass range
         bassSum += dataArray[i];
     }
-    const bassAverage = bassSum / 10;
-    
-    if (bassAverage > 140) {
+
+    const bassAverage = bassSum / 15;
+
+    // Dynamic threshold 
+    const threshold = currentEnergy * 1.3;
+
+    if (bassAverage > threshold && bassAverage > 100) {
+
         const now = Date.now();
-        if (now - lastBeatTime > 200) {
+
+        // Prevent double triggering
+        if (now - lastBeatTime > 250) {
 
             beatTimes.push(now);
             lastBeatTime = now;
-            
-            // last 10 beats for BPM calculation
+
+            //  visual pulse
+            mesh.scale.set(1.2, 1.2, 1.2);
+
+            //  ripple burst effect
+            beatPulse = 1.5;   // global variable 
+
+            // Keep last 10 beats
             if (beatTimes.length > 10) {
                 beatTimes.shift();
             }
-            
-            // Calculate BPM
+
+            // BPM Calculation
             if (beatTimes.length >= 3) {
+
                 const intervals = [];
+
                 for (let i = 1; i < beatTimes.length; i++) {
                     intervals.push(beatTimes[i] - beatTimes[i - 1]);
                 }
+
                 const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+
                 bpm = Math.round(60000 / avgInterval);
-                
-                //BPM range
+
                 bpm = Math.max(40, Math.min(200, bpm));
             }
         }
@@ -324,7 +343,7 @@ function resetForNewSong() {
 function animate() {
     requestAnimationFrame(animate);
 
-    if ((analyser && isListening) || (analyser && isListening)){
+    if (analyser && isListening) {
 
         analyser.getByteFrequencyData(dataArray);
 
@@ -334,34 +353,34 @@ function animate() {
         detectSilence(currentEnergy);
         detectBeat(dataArray);
 
-        const now = Date.now();
-        if (now - lastEmotionCheck > 1500) {
+        // Wave
+        const time = Date.now() * 0.002;
+        const positions = mesh.geometry.attributes.position;
 
-            const effectiveBPM = bpm > 0 ? bpm : Math.round(currentEnergy * 0.8);
-            const pitch = detectPitch();
-            const emotion = detectEmotion(effectiveBPM, currentEnergy, pitch);
+        for (let i = 0; i < positions.count; i++) {
 
-            if (!detectedEmotions.includes(emotion)) {
-                detectedEmotions.push(emotion);
-                updateMeshGradient();
-            }
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
 
-            updateEmotionDisplay();
-            lastEmotionCheck = now;
+            const distance = Math.sqrt(x * x + z * z);
+
+            let wave = Math.sin(distance * 3 - time * 4);
+
+            wave *= (currentEnergy / 255) * 1.5 + beatPulse;
+
+            positions.setY(i, wave);
         }
 
-        const scale = 1 + (currentEnergy / 255) * 0.4;
-        mesh.scale.set(scale, scale, scale);
-
-        const rotationSpeed = 0.003 + (currentEnergy / 255) * 0.01;
-        mesh.rotation.x += rotationSpeed;
-        mesh.rotation.y += rotationSpeed * 1.3;
+        positions.needsUpdate = true;
 
     } else {
 
-        mesh.rotation.x += 0.005;
-        mesh.rotation.y += 0.0065;
+        // subtle idle motion when not listening
+        mesh.rotation.y += 0.002;
     }
+
+    beatPulse *= 0.9;
+    mesh.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
 
     renderer.render(scene, camera);
 }
