@@ -203,101 +203,52 @@ function detectEmotion(bpm, energy) {
 // Update mesh colors with gradient
 function updateMeshGradient() {
     if (detectedEmotions.length === 0) return;
-    
+
+    const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+    const color = new THREE.Color(emotions[currentEmotion].color);
     const geometry = mesh.geometry;
     const colors = geometry.attributes.color.array;
-    const positions = geometry.attributes.position;
-    
-    // Get unique emotions
-    const uniqueEmotions = [...new Set(detectedEmotions)];
-    
-    if (uniqueEmotions.length === 1) {
-        // Single emotion - uniform color
-        const color = new THREE.Color(emotions[uniqueEmotions[0]].color);
-        for (let i = 0; i < positions.count; i++) {
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-        }
-    } else {
-        // Multiple emotions - create smooth gradient
-        for (let i = 0; i < positions.count; i++) {
-            const y = positions.getY(i);
-            
-            // Map Y position (-3 to 3) to emotion gradient (0 to 1)
-            const normalizedY = (y + 3) / 6;
-            
-            // Calculate which emotions to blend
-            const segmentSize = 1 / (uniqueEmotions.length - 1);
-            const segmentIndex = Math.floor(normalizedY / segmentSize);
-            const clampedSegmentIndex = Math.max(0, Math.min(uniqueEmotions.length - 2, segmentIndex));
-            
-            const emotion1 = uniqueEmotions[clampedSegmentIndex];
-            const emotion2 = uniqueEmotions[clampedSegmentIndex + 1];
-            
-            const color1 = new THREE.Color(emotions[emotion1].color);
-            const color2 = new THREE.Color(emotions[emotion2].color);
-            
-            // Calculate blend factor within segment
-            const segmentStart = clampedSegmentIndex * segmentSize;
-            const localBlend = (normalizedY - segmentStart) / segmentSize;
-            const clampedBlend = Math.max(0, Math.min(1, localBlend));
-            
-            // Smooth interpolation
-            const smoothBlend = clampedBlend * clampedBlend * (3 - 2 * clampedBlend);
-            const color = color1.clone().lerp(color2, smoothBlend);
-            
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-        }
+
+    for (let i = 0; i < geometry.attributes.position.count; i++) {
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
     }
-    
+
     geometry.attributes.color.needsUpdate = true;
 }
 
 // Update emotion display
 function updateEmotionDisplay() {
-
     const display = document.getElementById('emotion-display');
-    const uniqueEmotions = [...new Set(detectedEmotions)];
 
-    // If not listening
     if (!isListening) {
         display.innerHTML = "Press Start Listening 🎤";
         return;
     }
 
-    // If listening but no sound
     if (currentEnergy < 15) {
-        display.innerHTML = " Listening... No sound detected. Try playing music.";
+        display.innerHTML = "Listening... No sound detected.";
         return;
     }
 
-    // If listening and detecting but no emotion yet
-    if (uniqueEmotions.length === 0) {
-        display.innerHTML = " Listening... Detecting emotions...";
+    if (detectedEmotions.length === 0) {
+        display.innerHTML = "Listening... Detecting emotions...";
         return;
     }
 
-    // If emotions detected
+    const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+    const emotionData = emotions[currentEmotion];
     const pitch = detectPitch();
 
-    let html = `
-        <div> Emotions Detected</div>
+    const colorHex = '#' + emotionData.color.toString(16).padStart(6, '0');
+
+    display.innerHTML = `
+        <div>Emotions Detected:</div>
+        <div style="background-color: ${colorHex}; padding: 4px; color: #fff;">${emotionData.name}</div>
         <div>BPM: ${bpm} | Energy: ${Math.round(currentEnergy)} | Pitch: ${pitch} Hz</div>
-        <div style="margin-top:6px;">Detected:</div>
     `;
-
-    uniqueEmotions.forEach(emotionKey => {
-        const emotion = emotions[emotionKey];
-        const colorHex = '#' + emotion.color.toString(16).padStart(6, '0');
-        html += `<span class="emotion-tag" style="background-color:${colorHex};">${emotion.name}</span>`;
-    });
-
-    display.innerHTML = html;
 }
-
 
 // Silence detection variables
 let silenceThreshold = 30; // Adjust based on testing
@@ -346,7 +297,7 @@ function resetForNewSong() {
 function animate() {
     requestAnimationFrame(animate);
 
-    if (analyser && isListening) {
+    if ((analyser && isListening) || (analyser && isListening)){
 
         analyser.getByteFrequencyData(dataArray);
 
