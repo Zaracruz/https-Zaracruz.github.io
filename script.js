@@ -14,12 +14,45 @@ let currentEnergy = 0;
 
 // Emotion definitions based on BPM and energy
 const emotions = {
-    calm: { bpmRange: [0, 80], energyRange: [0, 100], color: 0x6B9BD1, name: 'Calm' },
-    sad: { bpmRange: [60, 100], energyRange: [40, 120], color: 0x9B59B6, name: 'Sad' },
-    happy: { bpmRange: [100, 140], energyRange: [100, 180], color: 0xFFD700, name: 'Happy' },
-    energetic: { bpmRange: [130, 170], energyRange: [150, 220], color: 0xFF6B6B, name: 'Energetic' },
-    intense: { bpmRange: [150, 220], energyRange: [180, 255], color: 0xFF4500, name: 'Intense' }
-    
+    calm: { 
+        bpmRange: [0, 85], 
+        energyRange: [0, 90], 
+        pitchRange: [50, 200], 
+        color: 0x6B9BD1, 
+        name: 'Calm' 
+    },
+
+    sad: { 
+        bpmRange: [60, 105], 
+        energyRange: [40, 130], 
+        pitchRange: [80, 300],   // lower-mid pitch
+        color: 0x9B59B6, 
+        name: 'Sad' 
+    },
+
+    happy: { 
+        bpmRange: [105, 145], 
+        energyRange: [110, 190], 
+        pitchRange: [250, 600],  // higher pitch
+        color: 0xFFD700, 
+        name: 'Happy' 
+    },
+
+    energetic: { 
+        bpmRange: [130, 175], 
+        energyRange: [160, 230], 
+        pitchRange: [200, 500], 
+        color: 0xFF6B6B, 
+        name: 'Energetic' 
+    },
+
+    intense: { 
+        bpmRange: [160, 220], 
+        energyRange: [200, 255], 
+        pitchRange: [100, 400], 
+        color: 0xFF4500, 
+        name: 'Intense' 
+    }
 };
 
 // Initialize Three.js scene
@@ -106,10 +139,6 @@ function detectBeat(dataArray) {
         const now = Date.now();
         if (now - lastBeatTime > 200) {
 
-            // Trigger haptic feedback on beat
-            //const intensity = Math.min(1, bassAverage / 255);
-            //triggerHaptic(intensity);
-
             beatTimes.push(now);
             lastBeatTime = now;
             
@@ -164,39 +193,34 @@ function detectPitch(){
 
 
 // Detect emotion based on BPM and energy
-function detectEmotion(bpm, energy) {
+function detectEmotion(bpm, energy, pitch) {
     let bestMatch = 'calm';
     let bestScore = 0;
-    
+
     for (const [key, emotion] of Object.entries(emotions)) {
         let score = 0;
-        
-        // Check BPM match
+
+        // BPM scoring (40%)
         if (bpm >= emotion.bpmRange[0] && bpm <= emotion.bpmRange[1]) {
-            score += 50;
-        } else {
-            // Partial score based on proximity
-            const bpmMid = (emotion.bpmRange[0] + emotion.bpmRange[1]) / 2;
-            const bpmDist = Math.abs(bpm - bpmMid);
-            score += Math.max(0, 30 - bpmDist / 5);
+            score += 40;
         }
-        
-        // Check energy match
+
+        // Energy scoring (35%)
         if (energy >= emotion.energyRange[0] && energy <= emotion.energyRange[1]) {
-            score += 50;
-        } else {
-            // Partial score based on proximity
-            const energyMid = (emotion.energyRange[0] + emotion.energyRange[1]) / 2;
-            const energyDist = Math.abs(energy - energyMid);
-            score += Math.max(0, 30 - energyDist / 5);
+            score += 35;
         }
-        
+
+        // Pitch scoring (25%)
+        if (pitch >= emotion.pitchRange[0] && pitch <= emotion.pitchRange[1]) {
+            score += 25;
+        }
+
         if (score > bestScore) {
             bestScore = score;
             bestMatch = key;
         }
     }
-    
+
     return bestMatch;
 }
 
@@ -311,8 +335,9 @@ function animate() {
         if (now - lastEmotionCheck > 1500) {
 
             const effectiveBPM = bpm > 0 ? bpm : Math.round(currentEnergy * 0.8);
-            const emotion = detectEmotion(effectiveBPM, currentEnergy);
-
+            const pitch = detectPitch();
+            const emotion = detectEmotion(effectiveBPM, currentEnergy, pitch);
+            
             if (!detectedEmotions.includes(emotion)) {
                 detectedEmotions.push(emotion);
                 updateMeshGradient();
