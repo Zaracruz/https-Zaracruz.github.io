@@ -258,21 +258,43 @@ function updateMeshGradient() {
 
 // Update emotion display
 function updateEmotionDisplay() {
+
     const display = document.getElementById('emotion-display');
     const uniqueEmotions = [...new Set(detectedEmotions)];
-    
-    if (uniqueEmotions.length === 0) {
-        display.innerHTML = '<div>Detecting emotions...</div>';
+
+    // If not listening
+    if (!isListening) {
+        display.innerHTML = "Press Start Listening 🎤";
         return;
     }
-    
-    let html = `<div>BPM: ${bpm} | Energy: ${Math.round(currentEnergy)}</div><div>Emotions Detected:</div>`;
+
+    // If listening but no sound
+    if (currentEnergy < 15) {
+        display.innerHTML = " Listening... No sound detected. Try playing music.";
+        return;
+    }
+
+    // If listening and detecting but no emotion yet
+    if (uniqueEmotions.length === 0) {
+        display.innerHTML = " Listening... Detecting emotions...";
+        return;
+    }
+
+    // If emotions detected
+    const pitch = detectPitch();
+
+    let html = `
+        <div> Emotions Detected</div>
+        <div>BPM: ${bpm} | Energy: ${Math.round(currentEnergy)} | Pitch: ${pitch} Hz</div>
+        <div style="margin-top:6px;">Detected:</div>
+    `;
+
     uniqueEmotions.forEach(emotionKey => {
         const emotion = emotions[emotionKey];
         const colorHex = '#' + emotion.color.toString(16).padStart(6, '0');
-        html += `<span class="emotion-tag" style="background-color: ${colorHex};">${emotion.name}</span>`;
+        html += `<span class="emotion-tag" style="background-color:${colorHex};">${emotion.name}</span>`;
     });
-    
+
     display.innerHTML = html;
 }
 
@@ -330,6 +352,12 @@ function animate() {
         // Calculate energy level from all frequencies
         const sum = dataArray.reduce((a, b) => a + b, 0);
         currentEnergy = sum / dataArray.length;
+
+    if (currentEnergy < 15) {
+        document.getElementById("emotion-display").innerHTML =
+        " Listening... No sound detected. Try playing music.";
+    return;
+}
         
         // Detect beats
         detectBeat(dataArray);
@@ -390,18 +418,39 @@ function onWindowResize() {
 }
 
 //Button
-document.getElementById("listenBtn").addEventListener("click", async function(){
-    if(!isListening){
-        await setupAudio();
-        isListening = true;
-        this.textContent = "Stop Listening ";
-    }else{
-        audioContext.close();
+document.getElementById("listenBtn").addEventListener("click", async function () {
+
+    const display = document.getElementById("emotion-display");
+
+    if (!isListening) {
+
+        this.textContent = "Requesting Mic Access...";
+        display.innerHTML = "Waiting for microphone permission...";
+
+        try {
+            await setupAudio();
+
+            isListening = true;
+            this.textContent = "Stop Listening";
+            display.innerHTML = " Listening... Make some sound";
+
+        } catch (error) {
+
+            console.error(error);
+            this.textContent = "Start Listening ";
+            display.innerHTML = " Microphone access denied. Please allow access and try again.";
+        }
+
+    } else {
+
+        if (audioContext) {
+            audioContext.close();
+        }
+
         isListening = false;
         this.textContent = "Start Listening ";
-        document.getElementById("emotion-display").innerHTML = "Stopped";
+        display.innerHTML = "Stopped.";
     }
 });
-
 
 init();
