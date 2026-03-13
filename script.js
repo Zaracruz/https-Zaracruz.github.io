@@ -3,6 +3,9 @@ let audioContext, analyser, audioSource, dataArray;
 let isListening = false;
 let beatPulse = 0;
 let hapticsEnabled = true;
+const EMOTION_KEYS = ['calm', 'sad', 'happy', 'energetic', 'intense'];
+let bars = [];
+const BAR_COUNT = EMOTION_KEYS.length;
 
 
 // BPM and emotion detection variables 
@@ -57,6 +60,67 @@ const emotions = {
     }
 };
 
+function createBars() {
+    bars = [];
+
+    // Responsive sizing
+    const screenWidth = window.innerWidth;
+    const maxBarWidth = Math.min(1, screenWidth / (BAR_COUNT * 2)); // width scales with screen
+    const spacing = maxBarWidth * 1.2; // spacing slightly bigger than width
+    const totalWidth = BAR_COUNT * spacing;
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+        // Main bar
+        const geometry = new THREE.BoxGeometry(maxBarWidth, 1, maxBarWidth);
+        const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+        const bar = new THREE.Mesh(geometry, material);
+
+        // Black outline
+        const edges = new THREE.EdgesGeometry(geometry);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 }));
+        bar.add(line);
+
+        // Position bars centered
+        bar.position.x = i * spacing - totalWidth / 2;
+        bar.scale.y = 1; // initial height
+        bar.position.y = bar.scale.y / 2;
+
+        scene.add(bar);
+        bars.push(bar);
+    }
+}
+
+function updateBars() {
+    const currentEmotion = detectedEmotions.length > 0 ? detectedEmotions[detectedEmotions.length - 1] : null;
+
+    for (let i = 0; i < bars.length; i++) {
+        const key = EMOTION_KEYS[i];
+
+        if (currentEmotion === key) {
+            // Animate bar scaling up with beat
+            const scale = 2 + (currentEnergy / 255);  // height reacts to energy
+            bars[i].scale.y = scale;
+            bars[i].position.y = bars[i].scale.y / 2;
+
+            // Change color to emotion color
+            bars[i].material.color.setHex(emotions[key].color);
+        } else {
+            // Reset inactive bars to white and default height
+            bars[i].scale.y += (1 - bars[i].scale.y) * 0.1;  // smooth return to default
+            bars[i].position.y = bars[i].scale.y / 2;
+            bars[i].material.color.setHex(0xffffff);
+        }
+    }
+}
+
+function animateIdleBars() {
+    for (let i = 0; i < bars.length; i++) {
+        bars[i].scale.y = 0.5 + 0.1 * Math.sin(Date.now() * 0.002 + i);
+        bars[i].position.y = bars[i].scale.y / 2;
+    }
+}
+
 // Initialize Three.js scene
 function init() {
     scene = new THREE.Scene();
@@ -72,35 +136,15 @@ function init() {
     scene.background = color2;
     
     camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 8;
+    camera.position.z = 15;
     
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     
-    // Create single sphere mesh with vertex colors for gradient
-    let sphereRadius = window.innerWidth < 600 ? 2.2 : 3;
-    const geometry = new THREE.CircleGeometry(5, 128);
-    geometry.rotateX(-Math.PI / 2); // horizontal
-
-    const material = new THREE.MeshStandardMaterial({
-        color: 0x6B9BD1,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.8
-    });
-    
-    // Initialize vertex colors
-    const colors = [];
-    const color = new THREE.Color(0x6B9BD1);
-    for (let i = 0; i < geometry.attributes.position.count; i++) {
-        colors.push(color.r, color.g, color.b);
-    }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    
-    mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+    // Create bar graph visual
+    createBars();
     
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 2);
@@ -118,6 +162,7 @@ function init() {
     animate();
 }
 
+
 // Setup audio analysis
 async function setupAudio(){
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -133,57 +178,55 @@ async function setupAudio(){
 }
 
 
-// Detect beats and calculate BPM
+// Detect beats and calculate BPM + add haptics to beat 
 function detectBeat(dataArray) {
-
+    // Calculate average bass from the first 15 frequency bins
     let bassSum = 0;
-    for (let i = 0; i < 15; i++) {  // wider bass range
+    for (let i = 0; i < 15; i++) {
         bassSum += dataArray[i];
     }
-
     const bassAverage = bassSum / 15;
 
-    // Dynamic threshold 
+    // Dynamic threshold based on current energy
     const threshold = currentEnergy * 1.3;
 
+    // Check for beat
     if (bassAverage > threshold && bassAverage > 100) {
-
         const now = Date.now();
 
-        // Prevent double triggering
-        if (now - lastBeatTime > 250) {
-
+        // Throttle beat detection to prevent multiple triggers
+        if (now - lastBeatTime > 300) {
             beatTimes.push(now);
             lastBeatTime = now;
 
-            //  visual pulse
+            // Visual pulse
             mesh.scale.set(1.2, 1.2, 1.2);
+            beatPulse = 1.5;
 
+            // Adaptive haptics
             if (hapticsEnabled && navigator.vibrate) {
-                const intensity = Math.min(80, bassAverage / 2);
-                navigator.vibrate(intensity);
+                const vibMin = 50;
+                const vibMax = 100;
+                const bassClamped = Math.min(255, Math.max(100, bassAverage));
+                const vibDuration = Math.round(
+                    ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
+                );
+                navigator.vibrate(vibDuration);
             }
-            //  ripple burst effect
-            beatPulse = 1.5;   // global variable 
 
-            // Keep last 10 beats
+            // Keep last 10 beats for BPM calculation
             if (beatTimes.length > 10) {
                 beatTimes.shift();
             }
 
-            // BPM Calculation
+            // Calculate BPM
             if (beatTimes.length >= 3) {
-
                 const intervals = [];
-
                 for (let i = 1; i < beatTimes.length; i++) {
                     intervals.push(beatTimes[i] - beatTimes[i - 1]);
                 }
-
-                const avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
-
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
                 bpm = Math.round(60000 / avgInterval);
-
                 bpm = Math.max(40, Math.min(200, bpm));
             }
         }
@@ -346,68 +389,53 @@ function resetForNewSong() {
 
 // Animation loop
 function animate() {
+
     requestAnimationFrame(animate);
 
     if (analyser && isListening) {
+    analyser.getByteFrequencyData(dataArray);
 
-        analyser.getByteFrequencyData(dataArray);
+    const sum = dataArray.reduce((a, b) => a + b, 0);
+    currentEnergy = sum / dataArray.length;
 
-        const sum = dataArray.reduce((a, b) => a + b, 0);
-        currentEnergy = sum / dataArray.length;
+    detectSilence(currentEnergy);
+    detectBeat(dataArray);
+    updateBars();
 
-        detectSilence(currentEnergy);
-        detectBeat(dataArray);
-
-        // Wave
-        const time = Date.now() * 0.002;
-        const positions = mesh.geometry.attributes.position;
-
-        for (let i = 0; i < positions.count; i++) {
-
-            const x = positions.getX(i);
-            const z = positions.getZ(i);
-
-            const distance = Math.sqrt(x * x + z * z);
-
-            let wave = Math.sin(distance * 3 - time * 4);
-
-            wave *= (currentEnergy / 255) * 1.5 + beatPulse;
-
-            positions.setY(i, wave);
-        }
-
-        positions.needsUpdate = true;
-
-    } else {
-
-        // subtle idle motion when not listening
-        mesh.rotation.y += 0.002;
+    const now = Date.now();
+    if (now - lastEmotionCheck > 400) {
+        const pitch = detectPitch();
+        const emotion = detectEmotion(bpm, currentEnergy, pitch);
+        detectedEmotions.push(emotion);
+        if (detectedEmotions.length > 20) detectedEmotions.shift();
+        updateEmotionDisplay();
+        lastEmotionCheck = now;
     }
 
+} else {
+    // idle bar animation
+    animateIdleBars();
+}
+    
     beatPulse *= 0.9;
-    mesh.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
+    //mesh.scale.lerp(new THREE.Vector3(1,1,1), 0.1);
 
     renderer.render(scene, camera);
 }
 
 //responsiveness
 function onWindowResize() {
-
     const width = window.innerWidth;
     const height = window.innerHeight;
-
     camera.aspect = width / height;
 
-    // Dynamic camera distance based on aspect ratio
-    const aspect = width / height;
-
-    if (aspect < 0.75) {
-        // Very tall screen (iPhone portrait)
-        camera.position.z = 12;
-    } else if (aspect < 1) {
-        camera.position.z = 10;
+    // Dynamic camera Z based on screen width
+    if (width < 500) {
+        camera.position.z = 12; // iPhone portrait
+    } else if (width < 900) {
+        camera.position.z = 10; // small tablet / phone landscape
     } else {
-        camera.position.z = 8;
+        camera.position.z = 8;  // desktop
     }
 
     camera.updateProjectionMatrix();

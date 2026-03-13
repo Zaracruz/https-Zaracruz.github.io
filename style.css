@@ -6,84 +6,57 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background-color: rgba(2, 0, 12, 0.895);
+    background-color: rgba(255, 255, 255, 0.05);
     overflow: hidden;
 }
 
-header {
-    background-color: #050225;
-    padding: 10px;
-    text-align: center;
-    width: 100%;
-}
-
-h1 {
-    margin: 0;
-    padding: 0;
-    color:rgba(245, 244, 248, 0.895);
-}
-
-ul.topnav {
+nav.topnav {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+    padding: 0 20px;
+    height: 56px;
     background-color: #050225;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     width: 100%;
 }
-
-ul.topnav li {
-    margin: 0;
-    padding: 0;
+ 
+.nav-brand {
+    color: rgba(245, 244, 248, 0.895);
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 0.03em;
 }
-
-ul.topnav li a {
-    display: block;
-    color: #f1f1f1;
-    padding: 14px 16px;
+ 
+.nav-links {
+    display: flex;
+    gap: 4px;
+}
+ 
+.nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: rgba(241, 241, 241, 0.45);
     text-decoration: none;
+    transition: color 0.2s, background 0.2s;
+}
+ 
+.nav-link:hover {
+    color: #f1f1f1;
+    background: rgba(255, 255, 255, 0.08);
+}
+ 
+.nav-link.active-link {
+    color: #d4d1fd;
+    background: rgba(212, 209, 253, 0.12);
 }
 
-ul.topnav li a:hover {
-    background-color: #9b70df;
-}
 
-.dropbtn {
-  background-color: #050225;
-  color: white;
-  padding: 16px;
-  font-size: 16px;
-  border: none;
-}
 
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
-}
-
-.dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-
-.dropdown-content a:hover {background-color: #d4d1fd;}
-
-.dropdown:hover .dropdown-content {display: block;}
-
-.dropdown:hover .dropbtn {background-color: #9b70df;}
 
 #canvas-container {
     width: 100vw;
@@ -177,8 +150,7 @@ label {
     align-items: center;
     padding: 20px;
     margin-bottom: 20px;
-
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
 }
 
@@ -195,7 +167,7 @@ label {
     opacity: 0.7;
 }
 
-/* TOGGLE SWITCH */
+/* toggle switch */
 
 .switch{
     position: relative;
