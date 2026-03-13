@@ -92,22 +92,20 @@ function createBars() {
 }
 
 function updateBars() {
-    const currentEmotion = detectedEmotions.length > 0 ? detectedEmotions[detectedEmotions.length - 1] : null;
-
     for (let i = 0; i < bars.length; i++) {
         const key = EMOTION_KEYS[i];
 
-        if (currentEmotion === key) {
-            // Animate bar scaling up with beat
-            const scale = 2 + (currentEnergy / 255);  // height reacts to energy
-            bars[i].scale.y = scale;
+        if (detectedEmotions.includes(key)) {
+            // Bar active: scale with energy
+            const scale = 1.5 + currentEnergy / 200; 
+            bars[i].scale.y += (scale - bars[i].scale.y) * 0.2; // smooth
             bars[i].position.y = bars[i].scale.y / 2;
 
-            // Change color to emotion color
+            // Change color to emotion
             bars[i].material.color.setHex(emotions[key].color);
         } else {
-            // Reset inactive bars to white and default height
-            bars[i].scale.y += (1 - bars[i].scale.y) * 0.1;  // smooth return to default
+            // Bar inactive: return to white
+            bars[i].scale.y += (1 - bars[i].scale.y) * 0.1;
             bars[i].position.y = bars[i].scale.y / 2;
             bars[i].material.color.setHex(0xffffff);
         }
@@ -180,55 +178,47 @@ async function setupAudio(){
 
 // Detect beats and calculate BPM + add haptics to beat 
 function detectBeat(dataArray) {
-    // Calculate average bass from the first 15 frequency bins
     let bassSum = 0;
-    for (let i = 0; i < 15; i++) {
-        bassSum += dataArray[i];
-    }
+    for (let i = 0; i < 15; i++) bassSum += dataArray[i];
     const bassAverage = bassSum / 15;
 
-    // Dynamic threshold based on current energy
-    const threshold = currentEnergy * 1.3;
+    // Lowered threshold so beats are detected more reliably
+    const threshold = Math.max(30, currentEnergy * 1.1);
 
-    // Check for beat
-    if (bassAverage > threshold && bassAverage > 100) {
-        const now = Date.now();
+    const now = Date.now();
+    if (bassAverage > threshold && now - lastBeatTime > 200) {
+        lastBeatTime = now;
+        beatTimes.push(now);
 
-        // Throttle beat detection to prevent multiple triggers
-        if (now - lastBeatTime > 300) {
-            beatTimes.push(now);
-            lastBeatTime = now;
+        // Keep last 20 beats
+        if (beatTimes.length > 20) beatTimes.shift();
 
-            // Visual pulse
+        // Visual pulse (if you still use mesh)
+        if (mesh) {
             mesh.scale.set(1.2, 1.2, 1.2);
             beatPulse = 1.5;
+        }
 
-            // Adaptive haptics
-            if (hapticsEnabled && navigator.vibrate) {
-                const vibMin = 50;
-                const vibMax = 100;
-                const bassClamped = Math.min(255, Math.max(100, bassAverage));
-                const vibDuration = Math.round(
-                    ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
-                );
-                navigator.vibrate(vibDuration);
-            }
+        // Adaptive haptics
+        if (hapticsEnabled && navigator.vibrate) {
+            const vibMin = 50;
+            const vibMax = 100;
+            const bassClamped = Math.min(255, Math.max(100, bassAverage));
+            const vibDuration = Math.round(
+                ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
+            );
+            navigator.vibrate(vibDuration);
+        }
 
-            // Keep last 10 beats for BPM calculation
-            if (beatTimes.length > 10) {
-                beatTimes.shift();
+        // Calculate BPM if at least 2 intervals
+        if (beatTimes.length >= 3) {
+            const intervals = [];
+            for (let i = 1; i < beatTimes.length; i++) {
+                intervals.push(beatTimes[i] - beatTimes[i - 1]);
             }
-
-            // Calculate BPM
-            if (beatTimes.length >= 3) {
-                const intervals = [];
-                for (let i = 1; i < beatTimes.length; i++) {
-                    intervals.push(beatTimes[i] - beatTimes[i - 1]);
-                }
-                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-                bpm = Math.round(60000 / avgInterval);
-                bpm = Math.max(40, Math.min(200, bpm));
-            }
+            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            bpm = Math.round(60000 / avgInterval);
+            bpm = Math.max(40, Math.min(220, bpm));
         }
     }
 }
@@ -400,6 +390,7 @@ function animate() {
 
     detectSilence(currentEnergy);
     detectBeat(dataArray);
+    console.log('BPM:', bpm, 'Energy:', Math.round(currentEnergy), 'Pitch:', detectPitch());
     updateBars();
 
     const now = Date.now();
@@ -408,6 +399,7 @@ function animate() {
         const emotion = detectEmotion(bpm, currentEnergy, pitch);
         detectedEmotions.push(emotion);
         if (detectedEmotions.length > 20) detectedEmotions.shift();
+
         updateEmotionDisplay();
         lastEmotionCheck = now;
     }
