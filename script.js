@@ -253,29 +253,30 @@ function detectPitch(){
 
 
 // Detect emotions based on BPM, energy, and pitch
-// Returns an array of all matching emotions
-function detectEmotions(bpm, energy, pitch) {
-    const activeEmotions = [];
+function detectBestEmotion(bpm, energy, pitch) {
+    let bestMatch = 'calm';
+    let bestScore = 0;
 
     for (const key of EMOTION_KEYS) {
         const e = emotions[key];
+        let score = 0;
 
-        // Check if current values are within emotion ranges
-        const bpmMatch = bpm >= e.bpmRange[0] && bpm <= e.bpmRange[1];
-        const energyMatch = energy >= e.energyRange[0] && energy <= e.energyRange[1];
-        const pitchMatch = pitch >= e.pitchRange[0] && pitch <= e.pitchRange[1];
+        // BPM scoring (40%)
+        if (bpm >= e.bpmRange[0] && bpm <= e.bpmRange[1]) score += 40;
 
-        if (bpmMatch && energyMatch && pitchMatch) {
-            activeEmotions.push(key);
+        // Energy scoring (35%)
+        if (energy >= e.energyRange[0] && energy <= e.energyRange[1]) score += 35;
+
+        // Pitch scoring (25%)
+        if (pitch >= e.pitchRange[0] && pitch <= e.pitchRange[1]) score += 25;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = key;
         }
     }
 
-    // If none match, default to calm
-    if (activeEmotions.length === 0) {
-        activeEmotions.push('calm');
-    }
-
-    return activeEmotions;
+    return bestMatch;
 }
 
 // Update mesh colors with gradient
@@ -390,7 +391,8 @@ function animate() {
     const now = Date.now();
     if (now - lastEmotionCheck > 400) {
         const pitch = detectPitch();
-        detectedEmotions = detectEmotions(bpm, currentEnergy, pitch);
+        const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
+        detectedEmotions.push(bestEmotion);
         if (detectedEmotions.length > 20) detectedEmotions.shift();
 
         updateEmotionDisplay();
