@@ -162,9 +162,14 @@ function init() {
 
 
 // Setup audio analysis
-async function setupAudio(){
+async function setupAudio(stream){
+
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+
+    if (audioContext.state === "suspended") {
+        await audioContext.resume();
+    }
+
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 1024;
 
@@ -174,7 +179,6 @@ async function setupAudio(){
     audioSource = audioContext.createMediaStreamSource(stream);
     audioSource.connect(analyser);
 }
-
 
 // Detect beats and calculate BPM + add haptics to beat 
 function detectBeat(dataArray) {
@@ -438,7 +442,12 @@ document.getElementById("listenBtn").addEventListener("click", async function ()
         display.innerHTML = "Waiting for microphone permission...";
 
         try {
-            await setupAudio();
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            await setupAudio(stream);
+
+            if (audioContext.state === "suspended") {
+                await audioContext.resume();
+            }
 
             isListening = true;
             this.textContent = "Stop Listening";
@@ -481,4 +490,4 @@ if (hapticsToggle) {
     });
 }
 
-init();
+window.addEventListener("load", init);
