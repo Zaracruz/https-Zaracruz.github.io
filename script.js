@@ -2,6 +2,7 @@ let scene, camera, renderer, mesh;
 let audioContext, analyser, audioSource, dataArray;
 let isListening = false;
 let beatPulse = 0;
+let hapticsEnabled = true;
 
 
 // BPM and emotion detection variables 
@@ -158,6 +159,10 @@ function detectBeat(dataArray) {
             //  visual pulse
             mesh.scale.set(1.2, 1.2, 1.2);
 
+            if (hapticsEnabled && navigator.vibrate) {
+                const intensity = Math.min(80, bassAverage / 2);
+                navigator.vibrate(intensity);
+            }
             //  ripple burst effect
             beatPulse = 1.5;   // global variable 
 
@@ -444,5 +449,23 @@ document.getElementById("listenBtn").addEventListener("click", async function ()
         display.innerHTML = "Stopped.";
     }
 });
+
+const hapticsToggle = document.getElementById("hapticsToggle");
+
+if (hapticsToggle) {
+
+    // Load saved setting
+    const savedSetting = localStorage.getItem("hapticsEnabled");
+    if (savedSetting !== null) {
+        hapticsEnabled = savedSetting === "true";
+        hapticsToggle.checked = hapticsEnabled;
+    }
+
+    // Update when user toggles
+    hapticsToggle.addEventListener("change", function () {
+        hapticsEnabled = this.checked;
+        localStorage.setItem("hapticsEnabled", hapticsEnabled);
+    });
+}
 
 init();

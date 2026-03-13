@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emotion Music Visualizer</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotion Music Visualizer</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <header>
-    <h1>Settings</h1>
-</header>
-<ul class="topnav">
-    <li><a href="./index.html"><img src="./icons/home.png" alt="My Icon" style="width:40px; height:40px;">
-</a></li>
 
-<p1>
-    <label>
-  <input type="checkbox" id="hapticsToggle" checked>
-  Enable Haptics
+<body>
+
+<header>
+<h1>Settings</h1>
+</header>
+
+<ul class="topnav">
+<li>
+<a href="./index.html">
+<img src="./icons/home.png" alt="Home" style="width:40px; height:40px;">
+</a>
+</li>
+</ul>
+
+<div class="settings-container">
+
+<div class="setting-row">
+<div class="setting-text">
+<h2>Haptics</h2>
+<p>Vibrate your phone to the beat of the music</p>
+</div>
+
+<label class="switch">
+<input type="checkbox" id="hapticsToggle" checked>
+<span class="slider"></span>
 </label>
 
-</p1>
+</div>
 
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="script.js"></script>
+</div>
+
+<script src="script.js"></script>
+
 </body>
 </html>
