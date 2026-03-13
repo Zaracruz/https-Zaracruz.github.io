@@ -178,47 +178,45 @@ async function setupAudio(){
 
 // Detect beats and calculate BPM + add haptics to beat 
 function detectBeat(dataArray) {
+    // Average bass from first 15 bins
     let bassSum = 0;
     for (let i = 0; i < 15; i++) bassSum += dataArray[i];
     const bassAverage = bassSum / 15;
 
-    // Lowered threshold so beats are detected more reliably
-    const threshold = Math.max(30, currentEnergy * 1.1);
+    // Lower threshold to detect softer beats
+    const threshold = Math.max(currentEnergy * 1.1, 80);
 
     const now = Date.now();
-    if (bassAverage > threshold && now - lastBeatTime > 200) {
-        lastBeatTime = now;
-        beatTimes.push(now);
 
-        // Keep last 20 beats
-        if (beatTimes.length > 20) beatTimes.shift();
+    if (bassAverage > threshold) {
+        if (now - lastBeatTime > 200) { // throttle for reliability
+            beatTimes.push(now);
+            lastBeatTime = now;
 
-        // Visual pulse (if you still use mesh)
-        if (mesh) {
-            mesh.scale.set(1.2, 1.2, 1.2);
-            beatPulse = 1.5;
-        }
-
-        // Adaptive haptics
-        if (hapticsEnabled && navigator.vibrate) {
-            const vibMin = 50;
-            const vibMax = 100;
-            const bassClamped = Math.min(255, Math.max(100, bassAverage));
-            const vibDuration = Math.round(
-                ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
-            );
-            navigator.vibrate(vibDuration);
-        }
-
-        // Calculate BPM if at least 2 intervals
-        if (beatTimes.length >= 3) {
-            const intervals = [];
-            for (let i = 1; i < beatTimes.length; i++) {
-                intervals.push(beatTimes[i] - beatTimes[i - 1]);
+            // Haptics
+            if (hapticsEnabled && navigator.vibrate) {
+                const vibMin = 50;
+                const vibMax = 100;
+                const bassClamped = Math.min(255, Math.max(100, bassAverage));
+                const vibDuration = Math.round(
+                    ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
+                );
+                navigator.vibrate(vibDuration);
             }
-            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-            bpm = Math.round(60000 / avgInterval);
-            bpm = Math.max(40, Math.min(220, bpm));
+
+            // Keep last 10 beats
+            if (beatTimes.length > 10) beatTimes.shift();
+
+            // Update BPM even with 2 beats
+            if (beatTimes.length >= 2) {
+                const intervals = [];
+                for (let i = 1; i < beatTimes.length; i++) {
+                    intervals.push(beatTimes[i] - beatTimes[i - 1]);
+                }
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                bpm = Math.round(60000 / avgInterval);
+                bpm = Math.max(40, Math.min(200, bpm));
+            }
         }
     }
 }
