@@ -85,14 +85,14 @@ function createBars() {
     }
 }
 
-function updateBars() {
+function updateBars(currentEmotion) {
     for (let i = 0; i < bars.length; i++) {
         const key = EMOTION_KEYS[i];
 
-        if (detectedEmotions.includes(key)) {
+        if (key === currentEmotion) {
             // Bar active: scale with energy
             const scale = 1.5 + currentEnergy / 200; 
-            bars[i].scale.y += (scale - bars[i].scale.y) * 0.2; // smooth
+            bars[i].scale.y += (scale - bars[i].scale.y) * 0.2;
             bars[i].position.y = bars[i].scale.y / 2;
 
             // Change color to emotion
@@ -429,17 +429,15 @@ function animate() {
         const pitch = detectPitch();
         const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
 
+        // Keep only last 3 frames for tiny smoothing to prevent flicker
         detectedEmotions.push(bestEmotion);
-        if (detectedEmotions.length > 15) detectedEmotions.shift(); // smoothing window
+        if (detectedEmotions.length > 3) detectedEmotions.shift();
 
-        // Most frequent emotion in last 15 frames
-        const counts = {};
-        detectedEmotions.forEach(e => counts[e] = (counts[e] || 0) + 1);
-        const smoothedEmotion = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+        // Use the latest detected emotion
+        const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
 
-        detectedEmotions[detectedEmotions.length - 1] = smoothedEmotion;
-
-        updateEmotionDisplay();
+        updateEmotionDisplay(currentEmotion);
+        updateBars(currentEmotion);
         lastEmotionCheck = now;
     }
 } else {
