@@ -1,8 +1,10 @@
 let scene, camera, renderer, mesh;
 let audioContext, analyser, audioSource, dataArray;
 let isListening = false;
+let audioElement = null;
+let fileSource = null;
+let isFileMode = false;
 let beatPulse = 0;
-let hapticsEnabled = true;
 const EMOTION_KEYS = ['calm', 'sad', 'happy', 'energetic', 'intense'];
 let bars = [];
 const BAR_COUNT = EMOTION_KEYS.length;
@@ -18,45 +20,37 @@ let lastEmotionCheck = 0;
 let currentEnergy = 0;
 
 // Emotion definitions based on BPM and energy
+// Replace your emotions object with this:
 const emotions = {
-    calm: { 
-        bpmRange: [0, 85], 
-        energyRange: [0, 90], 
-        pitchRange: [50, 200], 
-        color: 0x6B9BD1, 
-        name: 'Calm' 
+    calm: {
+        bpmRange: [0, 90],
+        energyRange: [0, 40],
+        pitchRange: [50, 300],     
+        color: 0x6B9BD1, name: 'Calm'
     },
-
-    sad: { 
-        bpmRange: [60, 105], 
-        energyRange: [40, 130], 
-        pitchRange: [80, 300],   // lower-mid pitch
-        color: 0x9B59B6, 
-        name: 'Sad' 
+    sad: {
+        bpmRange: [60, 100],
+        energyRange: [30, 70],     
+        pitchRange: [80, 300],
+        color: 0x9B59B6, name: 'Sad'
     },
-
-    happy: { 
-        bpmRange: [105, 145], 
-        energyRange: [110, 190], 
-        pitchRange: [250, 600],  // higher pitch
-        color: 0xFFD700, 
-        name: 'Happy' 
+    happy: {
+        bpmRange: [100, 140],
+        energyRange: [55, 120],   
+        pitchRange: [200, 600],
+        color: 0xFFD700, name: 'Happy'
     },
-
-    energetic: { 
-        bpmRange: [130, 175], 
-        energyRange: [160, 230], 
-        pitchRange: [200, 500], 
-        color: 0xFF6B6B, 
-        name: 'Energetic' 
+    energetic: {
+        bpmRange: [120, 170],
+        energyRange: [85, 160],    
+        pitchRange: [150, 500],
+        color: 0xFF6B6B, name: 'Energetic'
     },
-
-    intense: { 
-        bpmRange: [160, 220], 
-        energyRange: [200, 255], 
-        pitchRange: [100, 400], 
-        color: 0xFF4500, 
-        name: 'Intense' 
+    intense: {
+        bpmRange: [140, 200],
+        energyRange: [120, 255],   
+        pitchRange: [100, 400],
+        color: 0xFF4500, name: 'Intense'
     }
 };
 
@@ -180,46 +174,73 @@ async function setupAudio(stream){
     audioSource.connect(analyser);
 }
 
-// Detect beats and calculate BPM + add haptics to beat 
-function detectBeat(dataArray) {
-    // Average bass from first 15 bins
-    let bassSum = 0;
-    for (let i = 0; i < 15; i++) bassSum += dataArray[i];
-    const bassAverage = bassSum / 15;
+//upload file option
+async function setupFileAudio(file) {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
 
-    // Lower threshold to detect softer beats
-    const threshold = Math.max(currentEnergy * 1.1, 80);
+    if (audioContext.state === "suspended") {
+        await audioContext.resume();
+    }
+
+    // Stop previous audio if exists
+    if (audioElement) {
+        audioElement.pause();
+        audioElement = null;
+    }
+
+    audioElement = new Audio(URL.createObjectURL(file));
+    audioElement.crossOrigin = "anonymous";
+    audioElement.loop = false;
+
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 1024;
+
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+
+    fileSource = audioContext.createMediaElementSource(audioElement);
+    fileSource.connect(analyser);
+    analyser.connect(audioContext.destination);
+
+    audioElement.play();
+
+    isListening = true;
+    isFileMode = true;
+}
+
+// Detect beats and calculate BPM 
+function detectBeat(dataArray) {
+    let bassSum = 0;
+    for (let i = 0; i < 20; i++) bassSum += dataArray[i];
+    const bassAverage = bassSum / 20;
 
     const now = Date.now();
 
-    if (bassAverage > threshold) {
-        if (now - lastBeatTime > 200) { // throttle for reliability
+    // Dynamic threshold (THIS is key)
+    const dynamicThreshold = currentEnergy * 0.9;
+    const threshold = Math.max(40, dynamicThreshold);  
+
+    if (bassAverage > threshold && bassAverage > 60) {
+
+        if (now - lastBeatTime > 300) { // slightly slower debounce
             beatTimes.push(now);
             lastBeatTime = now;
 
-            // Haptics
-            if (hapticsEnabled && navigator.vibrate) {
-                const vibMin = 50;
-                const vibMax = 100;
-                const bassClamped = Math.min(255, Math.max(100, bassAverage));
-                const vibDuration = Math.round(
-                    ((bassClamped - 100) / (255 - 100)) * (vibMax - vibMin) + vibMin
-                );
-                navigator.vibrate(vibDuration);
-            }
+            if (beatTimes.length > 8) beatTimes.shift();
 
-            // Keep last 10 beats
-            if (beatTimes.length > 10) beatTimes.shift();
-
-            // Update BPM even with 2 beats
-            if (beatTimes.length >= 2) {
-                const intervals = [];
+            if (beatTimes.length >= 3) {
+                let intervals = [];
                 for (let i = 1; i < beatTimes.length; i++) {
                     intervals.push(beatTimes[i] - beatTimes[i - 1]);
                 }
+
                 const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
                 bpm = Math.round(60000 / avgInterval);
-                bpm = Math.max(40, Math.min(200, bpm));
+
+                // clamp realistic BPM
+                bpm = Math.max(60, Math.min(180, bpm));
             }
         }
     }
@@ -248,37 +269,35 @@ function detectPitch(){
     }
 
     if(bestOffset > 0){
-        return Math.round(audioContext.sampleRate/bestOffset);
-    }
-    return 0;
+        const pitch = audioContext.sampleRate / bestOffset;
+
+        // ignore unrealistic pitch
+        if (pitch < 100 || pitch > 800) return 0;
+
+        return Math.round(pitch);
+            }
+            return 0;
 }
 
 
 // Detect emotions based on BPM, energy, and pitch
 function detectBestEmotion(bpm, energy, pitch) {
-    let bestMatch = 'calm';
-    let bestScore = 0;
+    // Primary: energy thresholds (most reliable signal)
+    let base;
+    if (energy < 25)       base = 'calm';
+    else if (energy < 50)  base = 'sad';
+    else if (energy < 85)  base = 'happy';
+    else if (energy < 130) base = 'energetic';
+    else                   base = 'intense';
 
-    for (const key of EMOTION_KEYS) {
-        const e = emotions[key];
-        let score = 0;
-
-        // BPM scoring (40%)
-        if (bpm >= e.bpmRange[0] && bpm <= e.bpmRange[1]) score += 40;
-
-        // Energy scoring (35%)
-        if (energy >= e.energyRange[0] && energy <= e.energyRange[1]) score += 35;
-
-        // Pitch scoring (25%)
-        if (pitch >= e.pitchRange[0] && pitch <= e.pitchRange[1]) score += 25;
-
-        if (score > bestScore) {
-            bestScore = score;
-            bestMatch = key;
-        }
+    // BPM nudge — only if we have a real BPM reading
+    if (bpm > 0) {
+        if (bpm > 150 && base === 'energetic') base = 'intense';
+        if (bpm < 80  && base === 'happy')     base = 'sad';
+        if (bpm < 70  && base === 'energetic') base = 'happy';
     }
 
-    return bestMatch;
+    return base;
 }
 
 // Update mesh colors with gradient
@@ -324,11 +343,15 @@ function updateEmotionDisplay() {
 
     const colorHex = '#' + emotionData.color.toString(16).padStart(6, '0');
 
-    display.innerHTML = `
-        <div>Emotions Detected:</div>
-        <div style="background-color: ${colorHex}; padding: 4px; color: #fff;">${emotionData.name}</div>
-        <div>BPM: ${bpm} | Energy: ${Math.round(currentEnergy)} | Pitch: ${pitch} Hz</div>
-    `;
+   display.innerHTML = `
+    <div>Emotion:</div>
+    <div style="background-color: ${colorHex}; padding: 6px; color: #fff;">
+        ${emotionData.name}
+    </div>
+    <div>BPM: ${bpm}</div>
+    <div>Energy: ${Math.round(currentEnergy)}</div>
+    <div>Pitch: ${pitch} Hz</div>
+`;
 }
 
 // Silence detection variables
@@ -383,24 +406,42 @@ function animate() {
     analyser.getByteFrequencyData(dataArray);
 
     const sum = dataArray.reduce((a, b) => a + b, 0);
-    currentEnergy = sum / dataArray.length;
+    const rawEnergy = sum / dataArray.length;
+    currentEnergy = Math.min(200, rawEnergy === 0 ? 0 : Math.log1p(rawEnergy) * 30);
 
     detectSilence(currentEnergy);
     detectBeat(dataArray);
-    console.log('BPM:', bpm, 'Energy:', Math.round(currentEnergy), 'Pitch:', detectPitch());
+    console.log(
+    'BPM:', bpm,
+    '| Energy:', Math.round(currentEnergy),
+    '| Pitch:', detectPitch(),
+    '| Emotion:', detectedEmotions[detectedEmotions.length - 1],
+    '| EnergyBands:', EMOTION_KEYS.filter(k =>
+        currentEnergy >= emotions[k].energyRange[0] &&
+        currentEnergy <= emotions[k].energyRange[1]
+    ).join(',')
+    );
+
     updateBars();
 
     const now = Date.now();
     if (now - lastEmotionCheck > 400) {
         const pitch = detectPitch();
         const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
+
         detectedEmotions.push(bestEmotion);
-        if (detectedEmotions.length > 20) detectedEmotions.shift();
+        if (detectedEmotions.length > 15) detectedEmotions.shift(); // smoothing window
+
+        // Most frequent emotion in last 15 frames
+        const counts = {};
+        detectedEmotions.forEach(e => counts[e] = (counts[e] || 0) + 1);
+        const smoothedEmotion = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+
+        detectedEmotions[detectedEmotions.length - 1] = smoothedEmotion;
 
         updateEmotionDisplay();
         lastEmotionCheck = now;
     }
-
 } else {
     // idle bar animation
     animateIdleBars();
@@ -430,6 +471,28 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
 }
+
+//listen to audio file
+document.getElementById("fileInput").addEventListener("change", async function (event) {
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const display = document.getElementById("emotion-display");
+
+    display.innerHTML = "Loading audio file...";
+
+    try {
+        await setupFileAudio(file);
+
+        document.getElementById("listenBtn").textContent = "Stop Listening";
+        display.innerHTML = `Playing: ${file.name}`;
+
+    } catch (error) {
+        console.error(error);
+        display.innerHTML = "Error loading file.";
+    }
+});
 
 //Button
 document.getElementById("listenBtn").addEventListener("click", async function () {
@@ -464,30 +527,20 @@ document.getElementById("listenBtn").addEventListener("click", async function ()
 
         if (audioContext) {
             audioContext.close();
+            audioContext = null;
+        }
+
+        if (audioElement) {
+            audioElement.pause();
+            audioElement = null;
         }
 
         isListening = false;
-        this.textContent = "Start Listening ";
+        isFileMode = false;
+
+        this.textContent = "Start Listening";
         display.innerHTML = "Stopped.";
     }
 });
-
-const hapticsToggle = document.getElementById("hapticsToggle");
-
-if (hapticsToggle) {
-
-    // Load saved setting
-    const savedSetting = localStorage.getItem("hapticsEnabled");
-    if (savedSetting !== null) {
-        hapticsEnabled = savedSetting === "true";
-        hapticsToggle.checked = hapticsEnabled;
-    }
-
-    // Update when user toggles
-    hapticsToggle.addEventListener("change", function () {
-        hapticsEnabled = this.checked;
-        localStorage.setItem("hapticsEnabled", hapticsEnabled);
-    });
-}
 
 window.addEventListener("load", init);

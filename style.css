@@ -100,8 +100,12 @@ button:active {
     transform: translateY(0);
 }
 
-input[type="file"] {
-    display: none;
+#fileInput {
+    margin-top: 10px;
+    padding: 6px;
+    background: #ffffff;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 label {
