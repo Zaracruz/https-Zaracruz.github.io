@@ -8,6 +8,9 @@ let beatPulse = 0;
 const EMOTION_KEYS = ['calm', 'sad', 'happy', 'energetic', 'intense'];
 let bars = [];
 const BAR_COUNT = EMOTION_KEYS.length;
+let visualMode = localStorage.getItem("visualMode") || "bars";
+let waveLine;
+let circle;
 
 
 // BPM and emotion detection variables 
@@ -85,6 +88,29 @@ function createBars() {
     }
 }
 
+function createWave() {
+    const geometry = new THREE.BufferGeometry();
+    const points = new Float32Array(128 * 3);
+
+    geometry.setAttribute("position", new THREE.BufferAttribute(points, 3));
+
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+
+    waveLine = new THREE.Line(geometry, material);
+    scene.add(waveLine);
+}
+
+function createCircular() {
+    const geometry = new THREE.CircleGeometry(5, 128);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        wireframe: true
+    });
+
+    circle = new THREE.Mesh(geometry, material);
+    scene.add(circle);
+}
+
 function updateBars(currentEmotion) {
     for (let i = 0; i < bars.length; i++) {
         const key = EMOTION_KEYS[i];
@@ -106,10 +132,56 @@ function updateBars(currentEmotion) {
     }
 }
 
+function updateWave() {
+    if (!analyser) return;
+
+    analyser.getByteTimeDomainData(dataArray);
+
+    const positions = waveLine.geometry.attributes.position.array;
+
+    for (let i = 0; i < 128; i++) {
+        const x = (i - 64) * 0.2;
+        const y = (dataArray[i] - 128) / 50;
+
+        positions[i * 3] = x;
+        positions[i * 3 + 1] = y;
+        positions[i * 3 + 2] = 0;
+    }
+
+    waveLine.geometry.attributes.position.needsUpdate = true;
+}
+
+function updateCircular() {
+    if (!analyser) return;
+
+    analyser.getByteFrequencyData(dataArray);
+
+    const scale = 1 + currentEnergy / 150;
+    circle.scale.set(scale, scale, scale);
+
+    circle.rotation.z += 0.01;
+}
+
+
 function animateIdleBars() {
     for (let i = 0; i < bars.length; i++) {
         bars[i].scale.y = 0.5 + 0.1 * Math.sin(Date.now() * 0.002 + i);
         bars[i].position.y = bars[i].scale.y / 2;
+    }
+}
+
+function clearScene() {
+    bars.forEach(bar => scene.remove(bar));
+    bars = [];
+
+    if (waveLine) {
+        scene.remove(waveLine);
+        waveLine = null;
+    }
+
+    if (circle) {
+        scene.remove(circle);
+        circle = null;
     }
 }
 
@@ -134,10 +206,18 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('canvas-container').appendChild(renderer.domElement);
-    
-    // Create bar graph visual
-    createBars();
-    
+
+    //get latest visual mode
+    visualMode = localStorage.getItem("visualMode") || "bars";
+
+    console.log("INIT MODE:", visualMode);
+
+    clearScene();
+
+    if (visualMode === "bars") createBars();
+    if (visualMode === "wave") createWave();
+    if (visualMode === "circular") createCircular();
+        
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 2);
     scene.add(ambientLight);
@@ -437,10 +517,19 @@ function animate() {
         const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
 
         updateEmotionDisplay(currentEmotion);
-        updateBars(currentEmotion);
-        lastEmotionCheck = now;
-    }
-} else {
+        if (visualMode === "bars") {
+            updateBars(currentEmotion);
+        } 
+        else if (visualMode === "wave") {
+            updateWave();
+        } 
+        else if (visualMode === "circular") {
+            updateCircular();
+        }
+                lastEmotionCheck = now;
+            }
+        } else {
+
     // idle bar animation
     animateIdleBars();
 }
@@ -540,5 +629,30 @@ document.getElementById("listenBtn").addEventListener("click", async function ()
         display.innerHTML = "Stopped.";
     }
 });
+
+const inputs = document.querySelectorAll('input[name="visual"]');
+
+if (inputs.length > 0) {
+
+    // load saved mode first
+    const savedMode = localStorage.getItem("visualMode");
+
+    console.log("Loaded mode:", savedMode);
+
+    if (!savedMode) {
+        localStorage.setItem("visualMode", "bars");
+        inputs.forEach(input => {
+            input.checked = (input.value === "bars");
+        });
+    }
+
+    // save when changed
+    inputs.forEach(input => {
+        input.addEventListener("change", (e) => {
+            console.log("Saving mode:", e.target.value);
+            localStorage.setItem("visualMode", e.target.value);
+        });
+    });
+}
 
 window.addEventListener("load", init);
