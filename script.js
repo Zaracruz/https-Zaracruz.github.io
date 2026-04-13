@@ -11,6 +11,8 @@ const BAR_COUNT = EMOTION_KEYS.length;
 let visualMode = localStorage.getItem("visualMode") || "bars";
 let waveLine;
 let circle;
+let waveSmooth = new Array(128).fill(0);
+
 
 
 // BPM and emotion detection variables 
@@ -88,16 +90,29 @@ function createBars() {
     }
 }
 
+
 function createWave() {
-    const geometry = new THREE.BufferGeometry();
-    const points = new Float32Array(128 * 3);
+    const points = [];
 
-    geometry.setAttribute("position", new THREE.BufferAttribute(points, 3));
+    for (let i = 0; i < 128; i++) {
+        const x = (i - 64) * 0.2;
+        points.push(new THREE.Vector3(x, 0, 0));
+    }
 
-    const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+    const material = new THREE.LineBasicMaterial({
+        color: 0xffffff
+    });
 
     waveLine = new THREE.Line(geometry, material);
     scene.add(waveLine);
+}
+
+function getCenterWeight(i, total) {
+    const center = total / 2;
+    const distance = Math.abs(i - center);
+    return Math.max(0, 1 - distance / center);
 }
 
 function createCircular() {
@@ -132,36 +147,56 @@ function updateBars(currentEmotion) {
     }
 }
 
-function updateWave() {
-    if (!analyser) return;
+function updateWave(currentEmotion) {
+    if (!analyser || !waveLine) return;
 
     analyser.getByteTimeDomainData(dataArray);
 
-    const positions = waveLine.geometry.attributes.position.array;
+    const amplitudeBoost = 1 + currentEnergy / 120;
+    const positions = [];
 
-    for (let i = 0; i < 128; i++) {
+    const total = 128;
+
+    for (let i = 0; i < total; i++) {
+
         const x = (i - 64) * 0.2;
-        const y = (dataArray[i] - 128) / 50;
 
-        positions[i * 3] = x;
-        positions[i * 3 + 1] = y;
-        positions[i * 3 + 2] = 0;
+        const target = (dataArray[i] - 128) / 60;
+
+        // smooth motion
+        waveSmooth[i] = waveSmooth[i] * 0.85 + target * 0.15;
+
+        // center weighting
+        const weight = getCenterWeight(i, total);
+
+        // only middle moves strongly
+        const y = waveSmooth[i] * weight * amplitudeBoost;
+
+        positions.push(new THREE.Vector3(x, y, 0));
     }
 
-    waveLine.geometry.attributes.position.needsUpdate = true;
+    waveLine.geometry.setFromPoints(positions);
+
+    if (currentEmotion) {
+        const targetColor = new THREE.Color(emotions[currentEmotion].color);
+        waveLine.material.color.lerp(targetColor, 0.08);
+    }
 }
 
-function updateCircular() {
-    if (!analyser) return;
+function updateCircular(currentEmotion) {
+    if (!analyser || !circle) return;
 
     analyser.getByteFrequencyData(dataArray);
 
     const scale = 1 + currentEnergy / 150;
     circle.scale.set(scale, scale, scale);
-
     circle.rotation.z += 0.01;
-}
 
+    if (currentEmotion) {
+        const color = new THREE.Color(emotions[currentEmotion].color);
+        circle.material.color.lerp(color, 0.1);
+    }
+}
 
 function animateIdleBars() {
     for (let i = 0; i < bars.length; i++) {
@@ -196,7 +231,7 @@ function init() {
     const context = canvas.getContext('2d');
  
     const texture = new THREE.CanvasTexture(canvas);
-    const color2 = new THREE.Color("#100c6b");
+    const color2 = new THREE.Color("#0e0c32");
     scene.background = color2;
     
     camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -288,6 +323,16 @@ async function setupFileAudio(file) {
 
     isListening = true;
     isFileMode = true;
+    
+    const listenBtn = document.getElementById("listenBtn");
+    if (listenBtn) {
+        listenBtn.textContent = "Stop Listening";
+    }
+
+    const display = document.getElementById("emotion-display");
+    if (display) {
+        display.innerHTML = `Playing: ${file.name}`;
+    };
 }
 
 // Detect beats and calculate BPM 
@@ -298,7 +343,7 @@ function detectBeat(dataArray) {
 
     const now = Date.now();
 
-    // Dynamic threshold (THIS is key)
+    // Dynamic threshold
     const dynamicThreshold = currentEnergy * 0.9;
     const threshold = Math.max(40, dynamicThreshold);  
 
@@ -362,7 +407,7 @@ function detectPitch(){
 
 // Detect emotions based on BPM, energy, and pitch
 function detectBestEmotion(bpm, energy, pitch) {
-    // Primary: energy thresholds (most reliable signal)
+    // Primary: energy thresholds
     let base;
     if (energy < 25)       base = 'calm';
     else if (energy < 50)  base = 'sad';
@@ -370,7 +415,7 @@ function detectBestEmotion(bpm, energy, pitch) {
     else if (energy < 130) base = 'energetic';
     else                   base = 'intense';
 
-    // BPM nudge — only if we have a real BPM reading
+    // BPM nudge — only if have a real BPM reading
     if (bpm > 0) {
         if (bpm > 150 && base === 'energetic') base = 'intense';
         if (bpm < 80  && base === 'happy')     base = 'sad';
@@ -403,7 +448,7 @@ function updateEmotionDisplay() {
     const display = document.getElementById('emotion-display');
 
     if (!isListening) {
-        display.innerHTML = "Press Start Listening 🎤";
+        display.innerHTML = "Press Start Listening ";
         return;
     }
 
@@ -501,37 +546,39 @@ function animate() {
         currentEnergy <= emotions[k].energyRange[1]
     ).join(',')
     );
-
-    updateBars();
+}
 
     const now = Date.now();
+    if (analyser && isListening) {
+    const sum = dataArray.reduce((a, b) => a + b, 0);
+    const rawEnergy = sum / dataArray.length;
+    currentEnergy = Math.min(200, rawEnergy === 0 ? 0 : Math.log1p(rawEnergy) * 30);
+
+    detectSilence(currentEnergy);
+    detectBeat(dataArray);
+
+    const now = Date.now();
+
+    let currentEmotion = null; 
+
     if (now - lastEmotionCheck > 400) {
         const pitch = detectPitch();
         const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
 
-        // Keep only last 3 frames for tiny smoothing to prevent flicker
         detectedEmotions.push(bestEmotion);
         if (detectedEmotions.length > 3) detectedEmotions.shift();
 
-        // Use the latest detected emotion
-        const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+        currentEmotion = detectedEmotions[detectedEmotions.length - 1];
 
         updateEmotionDisplay(currentEmotion);
-        if (visualMode === "bars") {
-            updateBars(currentEmotion);
-        } 
-        else if (visualMode === "wave") {
-            updateWave();
-        } 
-        else if (visualMode === "circular") {
-            updateCircular();
-        }
-                lastEmotionCheck = now;
-            }
-        } else {
+        lastEmotionCheck = now;
+    } else {
+        currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+    }
 
-    // idle bar animation
-    animateIdleBars();
+    updateBars(currentEmotion);
+    updateCircular(currentEmotion);
+    updateWave(currentEmotion);
 }
     
     beatPulse *= 0.9;
@@ -560,75 +607,85 @@ function onWindowResize() {
 }
 
 //listen to audio file
-document.getElementById("fileInput").addEventListener("change", async function (event) {
+const fileInput = document.getElementById("fileInput");
 
-    const file = event.target.files[0];
-    if (!file) return;
+if (fileInput) {
+    fileInput.addEventListener("change", async function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-    const display = document.getElementById("emotion-display");
+        const status = document.getElementById("upload-status");
+        if (status) {
+            status.textContent = `Selected: ${file.name}`;
+        }
 
-    display.innerHTML = "Loading audio file...";
+        const display = document.getElementById("emotion-display");
 
-    try {
-        await setupFileAudio(file);
-
-        document.getElementById("listenBtn").textContent = "Stop Listening";
-        display.innerHTML = `Playing: ${file.name}`;
-
-    } catch (error) {
-        console.error(error);
-        display.innerHTML = "Error loading file.";
-    }
-});
-
-//Button
-document.getElementById("listenBtn").addEventListener("click", async function () {
-
-    const display = document.getElementById("emotion-display");
-
-    if (!isListening) {
-
-        this.textContent = "Requesting Mic Access...";
-        display.innerHTML = "Waiting for microphone permission...";
+        display.innerHTML = "Loading audio file...";
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            await setupAudio(stream);
+            await setupFileAudio(file);
+            display.innerHTML = `Playing: ${file.name}`;
+        } catch (error) {
+            console.error(error);
+            display.innerHTML = "Error loading file.";
+        }
+    });
+}
 
-            if (audioContext.state === "suspended") {
-                await audioContext.resume();
+//Button
+const listenBtn = document.getElementById("listenBtn");
+
+if (listenBtn) {
+    listenBtn.addEventListener("click", async function () {
+
+        const display = document.getElementById("emotion-display");
+
+        if (!isListening) {
+
+            this.textContent = "Requesting Mic Access...";
+            display.innerHTML = "Waiting for microphone permission...";
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                await setupAudio(stream);
+
+                if (audioContext.state === "suspended") {
+                    await audioContext.resume();
+                }
+
+                isListening = true;
+                this.textContent = "Stop Listening";
+                display.innerHTML = " Listening... Make some sound";
+
+            } catch (error) {
+
+                console.error(error);
+                this.textContent = "Start Listening ";
+                display.innerHTML = " Microphone access denied.";
             }
 
-            isListening = true;
-            this.textContent = "Stop Listening";
-            display.innerHTML = " Listening... Make some sound";
+        } else {
 
-        } catch (error) {
+            // stop mic/file safely
+            if (audioElement) {
+                audioElement.pause();
+                audioElement = null;
+            }
 
-            console.error(error);
-            this.textContent = "Start Listening ";
-            display.innerHTML = " Microphone access denied. Please allow access and try again.";
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            isListening = false;
+            isFileMode = false;
+
+            this.textContent = "Start Listening";
+            display.innerHTML = "Stopped.";
         }
-
-    } else {
-
-        if (audioContext) {
-            audioContext.close();
-            audioContext = null;
-        }
-
-        if (audioElement) {
-            audioElement.pause();
-            audioElement = null;
-        }
-
-        isListening = false;
-        isFileMode = false;
-
-        this.textContent = "Start Listening";
-        display.innerHTML = "Stopped.";
-    }
-});
+    });
+}
 
 const inputs = document.querySelectorAll('input[name="visual"]');
 

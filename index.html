@@ -17,7 +17,10 @@
 <body>
  
 <nav class="topnav">
-    <span class="nav-brand">Echoes Of Emotion</span>
+     <div class="nav-left"></div>
+
+    <div class="nav-brand">Echoes</div>
+    
     <div class="nav-links">
         <a href="./index.html" class="nav-link active-link" title="Home">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -39,7 +42,13 @@
 <div id="controls">
     <label>Live Emotion Detection Visualizer</label>
     <button id="listenBtn">Start Listening..</button>
-    <input type="file" id="fileInput" accept="audio/*" />
+    <div class="upload-wrapper">
+    <label for="fileInput" class="upload-btn">
+         Upload Audio File
+    </label>
+    <input type="file" id="fileInput" hidden>
+    <div id="upload-status">No file selected</div>
+</div>
     <div id="info"></div>
     <div id="emotion-display">Press "Start Listening" to analyze live audio</div>
 </div>
