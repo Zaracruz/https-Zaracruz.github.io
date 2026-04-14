@@ -51,7 +51,7 @@ const emotions = {
         pitchRange: [150, 500],
         color: 0xFF6B6B, name: 'Energetic'
     },
-    intense: {
+    upbeat: {
         bpmRange: [140, 200],
         energyRange: [120, 255],   
         pitchRange: [100, 400],
@@ -413,7 +413,7 @@ function detectBestEmotion(bpm, energy, pitch) {
     else if (energy < 50)  base = 'sad';
     else if (energy < 85)  base = 'happy';
     else if (energy < 130) base = 'energetic';
-    else                   base = 'intense';
+    else                   base = 'upbeat';
 
     // BPM nudge — only if have a real BPM reading
     if (bpm > 0) {
