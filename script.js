@@ -76,11 +76,20 @@ function createBars() {
     for (let i = 0; i < BAR_COUNT; i++) {
         // Main bar
         const geometry = new THREE.BoxGeometry(maxBarWidth, 1, maxBarWidth);
-        const material = new THREE.MeshStandardMaterial({ 
-        color: 0x111111, // dark base so neon pops
-        emissive: 0x000000,
-        emissiveIntensity: 0
-    });
+        const theme = localStorage.getItem("theme") || "default";
+
+        let material;
+
+        if (theme === "neon") {
+            material = new THREE.MeshBasicMaterial({
+                color: 0xffffff // will be overridden in updateBars
+            });
+        } else {
+            material = new THREE.MeshStandardMaterial({
+                emissive: 0x000000,
+                emissiveIntensity: 0
+            });
+        }
         const bar = new THREE.Mesh(geometry, material);
 
         // Black outline
@@ -150,25 +159,31 @@ function createCircular() {
 }
 
 function updateBars(currentEmotion) {
-    const theme = localStorage.getItem("theme");
+    const theme = localStorage.getItem("theme") || "default";
 
     for (let i = 0; i < bars.length; i++) {
         const key = EMOTION_KEYS[i];
+        const bar = bars[i];
+
+        let targetHeight = 0.6;
 
         if (key === currentEmotion) {
+            const energyFactor = Math.min(currentEnergy / 120, 1);
+            targetHeight = 0.6 + energyFactor * 2.2;
+        }
 
-            const scale = 1.5 + currentEnergy / 200;
-            bars[i].scale.y += (scale - bars[i].scale.y) * 0.2;
-            bars[i].position.y = bars[i].scale.y / 2;
+        // smooth height
+        const newHeight = bar.scale.y + (targetHeight - bar.scale.y) * 0.15;
+        bar.scale.y = newHeight;
+        bar.position.y = newHeight / 2;
 
-            //  ACTIVE COLOR
-           if (theme === "neon") {
-                bars[i].material.color.setHex(0x000000); // kill base color
-                bars[i].material.emissive.setHex(emotions[key].color);
-                bars[i].material.emissiveIntensity = 3; // STRONG glow
-            } else {
-                bars[i].material.color.setHex(emotions[key].color);
-            }
+        const color = emotions[key].color;
+
+        if (theme === "neon") {
+            bar.material.color.setHex(color);
+        } else {
+            bar.material.emissiveIntensity = 0;
+            bar.material.color.setHex(color);
         }
     }
 }
@@ -220,13 +235,6 @@ function updateCircular(currentEmotion) {
         } else {
             circle.material.color.lerp(new THREE.Color(emotions[currentEmotion].color), 0.1);
         }
-    }
-}
-
-function animateIdleBars() {
-    for (let i = 0; i < bars.length; i++) {
-        bars[i].scale.y = 0.5 + 0.1 * Math.sin(Date.now() * 0.002 + i);
-        bars[i].position.y = bars[i].scale.y / 2;
     }
 }
 
@@ -466,23 +474,6 @@ function detectBestEmotion(bpm, energy, pitch) {
     return base;
 }
 
-// Update mesh colors with gradient
-function updateMeshGradient() {
-    if (detectedEmotions.length === 0) return;
-
-    const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
-    const color = new THREE.Color(emotions[currentEmotion].color);
-    const geometry = mesh.geometry;
-    const colors = geometry.attributes.color.array;
-
-    for (let i = 0; i < geometry.attributes.position.count; i++) {
-        colors[i * 3] = color.r;
-        colors[i * 3 + 1] = color.g;
-        colors[i * 3 + 2] = color.b;
-    }
-
-    geometry.attributes.color.needsUpdate = true;
-}
 
 // Update emotion display
 function updateEmotionDisplay() {
@@ -752,10 +743,21 @@ function applyThemeToScene(theme) {
         );
     }
 
-    bars.forEach(bar => {
+   bars.forEach(bar => {
+    const theme = localStorage.getItem("theme") || "default";
+
+        if (theme === "neon") {
+            bar.material.emissiveIntensity = 1;
+        }
+
         if (theme === "minimal") {
-            bar.material.color.setHex(0x111111);
             bar.material.emissiveIntensity = 0;
+            bar.material.color.setHex(0x111111);
+        }
+
+        if (theme === "default") {
+            bar.material.emissiveIntensity = 0;
+            bar.material.color.setHex(0x111111)
         }
     });
 }
