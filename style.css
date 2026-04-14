@@ -1,10 +1,18 @@
+:root {
+    --bg-main: radial-gradient(circle at top, #080536, #01000c);
+    --text-main: #ffffff;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.06);
+    --accent: #6B9BD1;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
+body.theme-default {
     font-family: 'Arial', sans-serif;
     background-color: rgba(12, 2, 38, 0.05);
 }
@@ -55,9 +63,6 @@ nav.topnav {
     color: #d4d1fd;
     background: rgba(212, 209, 253, 0.12);
 }
-
-
-
 
 #canvas-container {
     width: 100vw;
@@ -326,4 +331,67 @@ input:checked + .slider:before{
         padding: 8px 14px;
         font-size: 13px;
     }
+}
+
+/* NEON MODE  */
+body.theme-neon {
+    --bg-main: radial-gradient(circle, #000000, #050505);
+    --text-main: #08f4fc;
+    --card-bg: rgba(0, 255, 255, 0.08);
+    --card-border: rgba(0, 255, 255, 0.25);
+    --accent: #00ffff;
+    
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+/*global glow effect*/
+body.theme-neon * {
+    text-shadow: 0 0 6px rgba(242, 145, 231, 0.7);
+}
+
+/* MINIMAL MODE  */
+body.theme-minimal {
+    --bg-main: white;
+    --text-main:black;
+    --card-bg: rgba(0,0,0,0.03);
+    --card-border: rgba(0,0,0,0.08);
+    --accent: #444;
+
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+
+.theme-neon button {
+    background: #00ffff;  
+    color: black;         
+    border: none;
+    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+}
+
+.theme-neon button:hover {
+    box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+}
+
+.theme-neon .upload-btn {
+    background: #00ffff;
+    color: black;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+.theme-minimal #controls {
+    background: rgb(189, 186, 186);
+    color: black;
+}
+
+.theme-minimal button {
+    background: black;
+    color: white;
+}
+
+.theme-minimal .upload-btn {
+    background: black;
+    color:white;
+    
 }

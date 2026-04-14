@@ -13,6 +13,11 @@ let waveLine;
 let circle;
 let waveSmooth = new Array(128).fill(0);
 
+const themeColors = {
+    default: 0x6B9BD1,
+    neon: 0x00ffff,
+    minimal: 0x222222
+};
 
 
 // BPM and emotion detection variables 
@@ -71,8 +76,11 @@ function createBars() {
     for (let i = 0; i < BAR_COUNT; i++) {
         // Main bar
         const geometry = new THREE.BoxGeometry(maxBarWidth, 1, maxBarWidth);
-        const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
-
+        const material = new THREE.MeshStandardMaterial({ 
+        color: 0x111111, // dark base so neon pops
+        emissive: 0x000000,
+        emissiveIntensity: 0
+    });
         const bar = new THREE.Mesh(geometry, material);
 
         // Black outline
@@ -92,6 +100,13 @@ function createBars() {
 
 
 function createWave() {
+    const theme = localStorage.getItem("theme") || "default";
+
+    const baseColor =
+        theme === "minimal" ? 0x000000 :
+        theme === "neon" ? 0x00ffff :
+        0xffffff;
+
     const points = [];
 
     for (let i = 0; i < 128; i++) {
@@ -102,7 +117,7 @@ function createWave() {
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
     const material = new THREE.LineBasicMaterial({
-        color: 0xffffff
+        color: baseColor
     });
 
     waveLine = new THREE.Line(geometry, material);
@@ -116,9 +131,17 @@ function getCenterWeight(i, total) {
 }
 
 function createCircular() {
+    const theme = localStorage.getItem("theme") || "default";
+
+    const baseColor =
+        theme === "minimal" ? 0x000000 :
+        theme === "neon" ? 0x00ffff :
+        0xffffff;
+
     const geometry = new THREE.CircleGeometry(5, 128);
+
     const material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: baseColor,
         wireframe: true
     });
 
@@ -127,22 +150,25 @@ function createCircular() {
 }
 
 function updateBars(currentEmotion) {
+    const theme = localStorage.getItem("theme");
+
     for (let i = 0; i < bars.length; i++) {
         const key = EMOTION_KEYS[i];
 
         if (key === currentEmotion) {
-            // Bar active: scale with energy
-            const scale = 1.5 + currentEnergy / 200; 
+
+            const scale = 1.5 + currentEnergy / 200;
             bars[i].scale.y += (scale - bars[i].scale.y) * 0.2;
             bars[i].position.y = bars[i].scale.y / 2;
 
-            // Change color to emotion
-            bars[i].material.color.setHex(emotions[key].color);
-        } else {
-            // Bar inactive: return to white
-            bars[i].scale.y += (1 - bars[i].scale.y) * 0.1;
-            bars[i].position.y = bars[i].scale.y / 2;
-            bars[i].material.color.setHex(0xffffff);
+            //  ACTIVE COLOR
+           if (theme === "neon") {
+                bars[i].material.color.setHex(0x000000); // kill base color
+                bars[i].material.emissive.setHex(emotions[key].color);
+                bars[i].material.emissiveIntensity = 3; // STRONG glow
+            } else {
+                bars[i].material.color.setHex(emotions[key].color);
+            }
         }
     }
 }
@@ -150,41 +176,35 @@ function updateBars(currentEmotion) {
 function updateWave(currentEmotion) {
     if (!analyser || !waveLine) return;
 
+    const theme = localStorage.getItem("theme");
+
     analyser.getByteTimeDomainData(dataArray);
 
-    const amplitudeBoost = 1 + currentEnergy / 120;
     const positions = [];
 
-    const total = 128;
-
-    for (let i = 0; i < total; i++) {
-
+    for (let i = 0; i < 128; i++) {
         const x = (i - 64) * 0.2;
-
-        const target = (dataArray[i] - 128) / 60;
-
-        // smooth motion
-        waveSmooth[i] = waveSmooth[i] * 0.85 + target * 0.15;
-
-        // center weighting
-        const weight = getCenterWeight(i, total);
-
-        // only middle moves strongly
-        const y = waveSmooth[i] * weight * amplitudeBoost;
-
+        const y = (dataArray[i] - 128) / 60;
         positions.push(new THREE.Vector3(x, y, 0));
     }
 
     waveLine.geometry.setFromPoints(positions);
 
     if (currentEmotion) {
-        const targetColor = new THREE.Color(emotions[currentEmotion].color);
-        waveLine.material.color.lerp(targetColor, 0.08);
+        const color = emotions[currentEmotion].color;
+
+        if (theme === "neon") {
+            waveLine.material.color.setHex(emotions[currentEmotion].color);
+        } else {
+            waveLine.material.color.lerp(new THREE.Color(emotions[currentEmotion].color), 0.1);
+        }
     }
 }
 
 function updateCircular(currentEmotion) {
     if (!analyser || !circle) return;
+
+    const theme = localStorage.getItem("theme");
 
     analyser.getByteFrequencyData(dataArray);
 
@@ -193,8 +213,13 @@ function updateCircular(currentEmotion) {
     circle.rotation.z += 0.01;
 
     if (currentEmotion) {
-        const color = new THREE.Color(emotions[currentEmotion].color);
-        circle.material.color.lerp(color, 0.1);
+        const color = emotions[currentEmotion].color;
+
+        if (theme === "neon") {
+            circle.material.color.setHex(emotions[currentEmotion].color);
+        } else {
+            circle.material.color.lerp(new THREE.Color(emotions[currentEmotion].color), 0.1);
+        }
     }
 }
 
@@ -220,19 +245,35 @@ function clearScene() {
     }
 }
 
+const savedTheme = localStorage.getItem("theme") || "default";
+document.body.className = `theme-${savedTheme}`;
+
 // Initialize Three.js scene
 function init() {
     scene = new THREE.Scene();
-    
+    const savedTheme = localStorage.getItem("theme") || "default";
+    document.body.className = `theme-${savedTheme}`;
+
+    const theme = localStorage.getItem("theme") || "default";
+
+    if (theme === "neon") {
+        scene.background = new THREE.Color(0x000000);
+    } else if (theme === "minimal") {
+        scene.background = new THREE.Color(0xf2f2f2);
+    } else {
+        scene.background = new THREE.Color(0x0e0c32);
+    }
+        
     // Create gradient background
     const canvas = document.createElement('canvas');
     canvas.width = 2;
     canvas.height = 512;
     const context = canvas.getContext('2d');
- 
-    const texture = new THREE.CanvasTexture(canvas);
-    const color2 = new THREE.Color("#0e0c32");
-    scene.background = color2;
+
+    //commented out to test if interfering with themes 
+    //const texture = new THREE.CanvasTexture(canvas);
+    //const color2 = new THREE.Color("#0e0c32");
+    //scene.background = color2;
     
     camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 15;
@@ -686,6 +727,54 @@ if (listenBtn) {
         }
     });
 }
+
+//helper function for themes
+function applyThemeToScene(theme) {
+    let baseColor;
+
+    if (theme === "neon") baseColor = 0x000000;
+    else if (theme === "minimal") baseColor = 0xf2f2f2;
+    else baseColor = 0x0e0c32;
+
+    scene.background = new THREE.Color(baseColor);
+
+    if (waveLine) {
+        waveLine.material.color.setHex(
+            theme === "minimal" ? 0x000000 :
+            theme === "neon" ? 0x00ffff : 0xffffff
+        );
+    }
+
+    if (circle) {
+        circle.material.color.setHex(
+            theme === "minimal" ? 0x000000 :
+            theme === "neon" ? 0x00ffff : 0xffffff
+        );
+    }
+
+    bars.forEach(bar => {
+        if (theme === "minimal") {
+            bar.material.color.setHex(0x111111);
+            bar.material.emissiveIntensity = 0;
+        }
+    });
+}
+
+//listeners
+const themeInputs = document.querySelectorAll('input[name="theme"]');
+
+themeInputs.forEach(input => {
+    input.addEventListener("change", (e) => {
+        const theme = e.target.value;
+
+        document.body.className = `theme-${theme}`;
+        localStorage.setItem("theme", theme);
+
+        if (scene) {
+            applyThemeToScene(theme);
+        }
+    });
+});
 
 const inputs = document.querySelectorAll('input[name="visual"]');
 
