@@ -87,25 +87,20 @@
 <script src="script.js"></script>
 
 <div id="emotionPopup" class="popup hidden">
-  <div class="popup-content">
+    <div class="popup-content">
 
-    <h3>Emotion Mode</h3>
+        <select id="emotionMode">
+            <option value="auto">Auto Detection</option>
+            <option value="manual">Manual</option>
+        </select>
 
-    <!-- MODE SELECT -->
-    <select id="emotionMode">
-      <option value="auto">Auto Detection</option>
-      <option value="manual">Manual</option>
-    </select>
+        <button data-emotion="happy">Happy</button>
+        <button data-emotion="sad">Sad</button>
+        <button data-emotion="energetic">Energetic</button>
+        <button data-emotion="upbeat">Upbeat</button>
 
-    <!-- ONLY USED IN MANUAL MODE -->
-    <div id="manualSection">
-      <h4>Pick Emotion</h4>
-
-      <button data-emotion="happy">Happy</button>
-      <button data-emotion="sad">Sad</button>
-      <button data-emotion="energetic">Energetic</button>
-      <button data-emotion="upbeat">Upbeat</button>
     </div>
+</div>
 
   </div>
 </div>

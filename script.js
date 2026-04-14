@@ -12,8 +12,6 @@ let visualMode = localStorage.getItem("visualMode") || "bars";
 let waveLine;
 let circle;
 let waveSmooth = new Array(128).fill(0);
-let mode = localStorage.getItem("emotionMode") || "auto";
-let manualEmotion = localStorage.getItem("manualEmotion") || "happy";
 
 const themeColors = {
     default: 0x6B9BD1,
@@ -610,7 +608,7 @@ function animate() {
     updateBars(currentEmotion);
     updateCircular(currentEmotion);
     updateWave(currentEmotion);
-    updateVisual();
+    //updateVisual();
 }
     
     beatPulse *= 0.9;
@@ -719,47 +717,73 @@ if (listenBtn) {
     });
 }
 
+//emotion selection
+
 const popup = document.getElementById("emotionPopup");
 const emotionBtn = document.getElementById("emotionBtn");
 const emotionMode = document.getElementById("emotionMode");
+const visualiser = document.getElementById("visualiser");
+
+// fallback state
+let manualEmotion = localStorage.getItem("manualEmotion") || "happy";
+let mode = localStorage.getItem("emotionMode") || "auto";
+
 
 // OPEN POPUP
-emotionBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    popup.classList.remove("hidden");
-});
+
+if (emotionBtn && popup) {
+    emotionBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        popup.classList.remove("hidden");
+    });
+}
 
 // CLOSE WHEN CLICKING OUTSIDE
-window.addEventListener("click", (e) => {
-    if (e.target === popup) {
-        popup.classList.add("hidden");
-    }
-});
+if (popup) {
+    popup.addEventListener("click", (e) => {
+        if (e.target === popup) {
+            popup.classList.add("hidden");
+        }
+    });
+}
 
-// MODE CHANGE (auto/manual)
-emotionMode.addEventListener("change", () => {
-    localStorage.setItem("emotionMode", emotionMode.value);
-    updateVisual();
-});
 
-// MANUAL EMOTION PICK
-popup.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
+// MODE CHANGE (AUTO / MANUAL)
 
-        manualEmotion = btn.dataset.emotion;
+if (emotionMode) {
+    emotionMode.value = mode;
 
-        localStorage.setItem("manualEmotion", manualEmotion);
-        localStorage.setItem("emotionMode", "manual");
-
-        emotionMode.value = "manual";
+    emotionMode.addEventListener("change", () => {
+        mode = emotionMode.value;
+        localStorage.setItem("emotionMode", mode);
 
         updateVisual();
-        popup.classList.add("hidden");
     });
-});
+}
 
-// Function that updates visuals
+
+// EMOTION BUTTONS (MANUAL MODE)
+
+if (popup) {
+    popup.querySelectorAll("button[data-emotion]").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+            manualEmotion = btn.dataset.emotion;
+
+            localStorage.setItem("manualEmotion", manualEmotion);
+            localStorage.setItem("emotionMode", "manual");
+
+            mode = "manual";
+            if (emotionMode) emotionMode.value = "manual";
+
+            updateVisual();
+            popup.classList.add("hidden");
+        });
+    });
+}
+
 function updateVisual() {
+
     const mode = localStorage.getItem("emotionMode") || "auto";
 
     let emotion;
@@ -773,14 +797,30 @@ function updateVisual() {
     let color = "";
 
     switch (emotion) {
-        case "happy": color = "#FFD700"; break;
-        case "sad": color = "#57a5f4ff"; break;
-        case "energetic": color = "#e94b75ff"; break;
-        case "upbeat": color = "#e9411fff"; break;
-        default: color = "white";
+        case "happy":
+            color = "#FFD700";
+            break;
+        case "sad":
+            color = "#57a5f4";
+            break;
+        case "energetic":
+            color = "#e94b75";
+            break;
+        case "upbeat":
+            color = "#e9411f";
+            break;
+        default:
+            color = "#ffffff";
     }
 
-    visualiser.style.background = color;
+    if (visualiser) {
+        visualiser.style.background = color;
+    }
+
+    // OPTIONAL: also affect 3D scene instantly
+    if (scene) {
+        scene.background = new THREE.Color(color);
+    }
 }
 
 //helper function for themes
