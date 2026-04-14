@@ -12,6 +12,8 @@ let visualMode = localStorage.getItem("visualMode") || "bars";
 let waveLine;
 let circle;
 let waveSmooth = new Array(128).fill(0);
+let mode = localStorage.getItem("emotionMode") || "auto";
+let manualEmotion = localStorage.getItem("manualEmotion") || "happy";
 
 const themeColors = {
     default: 0x6B9BD1,
@@ -19,9 +21,7 @@ const themeColors = {
     minimal: 0x222222
 };
 
-
 // BPM and emotion detection variables 
-// need to add pitch
 let bpm = 0;
 let lastBeatTime = 0;
 let beatTimes = [];
@@ -30,7 +30,6 @@ let lastEmotionCheck = 0;
 let currentEnergy = 0;
 
 // Emotion definitions based on BPM and energy
-// Replace your emotions object with this:
 const emotions = {
     calm: {
         bpmRange: [0, 90],
@@ -611,6 +610,7 @@ function animate() {
     updateBars(currentEmotion);
     updateCircular(currentEmotion);
     updateWave(currentEmotion);
+    updateVisual();
 }
     
     beatPulse *= 0.9;
@@ -717,6 +717,70 @@ if (listenBtn) {
             display.innerHTML = "Stopped.";
         }
     });
+}
+
+const popup = document.getElementById("emotionPopup");
+const emotionBtn = document.getElementById("emotionBtn");
+const emotionMode = document.getElementById("emotionMode");
+
+// OPEN POPUP
+emotionBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    popup.classList.remove("hidden");
+});
+
+// CLOSE WHEN CLICKING OUTSIDE
+window.addEventListener("click", (e) => {
+    if (e.target === popup) {
+        popup.classList.add("hidden");
+    }
+});
+
+// MODE CHANGE (auto/manual)
+emotionMode.addEventListener("change", () => {
+    localStorage.setItem("emotionMode", emotionMode.value);
+    updateVisual();
+});
+
+// MANUAL EMOTION PICK
+popup.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+
+        manualEmotion = btn.dataset.emotion;
+
+        localStorage.setItem("manualEmotion", manualEmotion);
+        localStorage.setItem("emotionMode", "manual");
+
+        emotionMode.value = "manual";
+
+        updateVisual();
+        popup.classList.add("hidden");
+    });
+});
+
+// Function that updates visuals
+function updateVisual() {
+    const mode = localStorage.getItem("emotionMode") || "auto";
+
+    let emotion;
+
+    if (mode === "auto") {
+        emotion = detectedEmotions[detectedEmotions.length - 1] || "happy";
+    } else {
+        emotion = localStorage.getItem("manualEmotion") || "happy";
+    }
+
+    let color = "";
+
+    switch (emotion) {
+        case "happy": color = "#FFD700"; break;
+        case "sad": color = "#57a5f4ff"; break;
+        case "energetic": color = "#e94b75ff"; break;
+        case "upbeat": color = "#e9411fff"; break;
+        default: color = "white";
+    }
+
+    visualiser.style.background = color;
 }
 
 //helper function for themes

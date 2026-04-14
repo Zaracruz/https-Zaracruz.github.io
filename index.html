@@ -34,6 +34,32 @@
                 <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
             </svg>
         </a>
+        <a href="./info.html" class="nav-link" title="Info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                stroke="currentColor" stroke-width="2" 
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+        </a>
+    <a href="#" class="nav-link" id="emotionBtn" title="Emotion">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            
+            <!-- Face -->
+            <circle cx="12" cy="12" r="10"/>
+            
+            <!-- Eyes -->
+            <line x1="9" y1="10" x2="9.01" y2="10"/>
+            <line x1="15" y1="10" x2="15.01" y2="10"/>
+            
+            <!-- Smile -->
+            <path d="M8 15c1.5 1.5 6.5 1.5 8 0"/>
+        </svg>
+    </a>
+
     </div>
 </nav>
  
@@ -52,9 +78,38 @@
     <div id="info"></div>
     <div id="emotion-display">Press "Start Listening" to analyze live audio</div>
 </div>
+
+</div>
+
+<div id="visualiser" class="visualiser"></div>
  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="script.js"></script>
+
+<div id="emotionPopup" class="popup hidden">
+  <div class="popup-content">
+
+    <h3>Emotion Mode</h3>
+
+    <!-- MODE SELECT -->
+    <select id="emotionMode">
+      <option value="auto">Auto Detection</option>
+      <option value="manual">Manual</option>
+    </select>
+
+    <!-- ONLY USED IN MANUAL MODE -->
+    <div id="manualSection">
+      <h4>Pick Emotion</h4>
+
+      <button data-emotion="happy">Happy</button>
+      <button data-emotion="sad">Sad</button>
+      <button data-emotion="energetic">Energetic</button>
+      <button data-emotion="upbeat">Upbeat</button>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
  

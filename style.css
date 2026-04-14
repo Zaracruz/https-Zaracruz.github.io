@@ -292,6 +292,25 @@ input:checked + .slider:before{
     transform: translateX(24px);
 }
 
+/*info css*/
+.info-container {
+    padding: 40px;
+    max-width: 800px;
+    margin: auto;
+}
+
+.info-section {
+    margin-bottom: 30px;
+}
+
+.info-section h2 {
+    margin-bottom: 10px;
+}
+
+.info-section p {
+    line-height: 1.6;
+}
+
 /* Mobile fixes */
 @media (max-width: 768px) {
     #canvas-container {
@@ -395,3 +414,19 @@ body.theme-minimal {
     color:white;
     
 }
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #111;
+    padding: 20px;
+    border-radius: 12px;
+    z-index: 9999;
+}
+
+.hidden {
+    display: none;
+}
+
