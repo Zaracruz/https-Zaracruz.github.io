@@ -5,7 +5,7 @@ let audioElement = null;
 let fileSource = null;
 let isFileMode = false;
 let beatPulse = 0;
-const EMOTION_KEYS = ['calm', 'sad', 'happy', 'energetic', 'intense'];
+const EMOTION_KEYS = ['calm', 'sad', 'happy', 'energetic', 'upbeat'];
 let bars = [];
 const BAR_COUNT = EMOTION_KEYS.length;
 let visualMode = localStorage.getItem("visualMode") || "bars";
@@ -55,7 +55,7 @@ const emotions = {
         bpmRange: [140, 200],
         energyRange: [120, 255],   
         pitchRange: [100, 400],
-        color: 0xFF4500, name: 'Intense'
+        color: 0xFF4500, name: 'UpBeat'
     }
 };
 
@@ -417,7 +417,7 @@ function detectBestEmotion(bpm, energy, pitch) {
 
     // BPM nudge — only if have a real BPM reading
     if (bpm > 0) {
-        if (bpm > 150 && base === 'energetic') base = 'intense';
+        if (bpm > 150 && base === 'energetic') base = 'upbeat';
         if (bpm < 80  && base === 'happy')     base = 'sad';
         if (bpm < 70  && base === 'energetic') base = 'happy';
     }
