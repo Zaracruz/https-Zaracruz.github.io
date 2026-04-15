@@ -50,15 +50,15 @@ const emotions = {
         color: 0xFFD700, name: 'Happy'
     },
     energetic: {
-        bpmRange: [120, 170],
-        energyRange: [85, 160],    
+        bpmRange: [180, 250],
+        energyRange: [120, 180],    
         pitchRange: [150, 500],
         color: 0xFF6B6B, name: 'Energetic'
     },
     upbeat: {
-        bpmRange: [140, 200],
-        energyRange: [120, 255],   
-        pitchRange: [100, 400],
+        bpmRange: [250, 300],
+        energyRange: [170, 255],   
+        pitchRange: [170, 550],
         color: 0xFF4500, name: 'UpBeat'
     }
 };
@@ -616,10 +616,6 @@ updateBars(currentEmotion);
 updateCircular(currentEmotion);
 updateWave(currentEmotion);
 
-   
-    updateCircular(currentEmotion);
-    updateWave(currentEmotion);
-    //updateVisual();
 }
     
     beatPulse *= 0.9;
@@ -829,8 +825,11 @@ function updateVisual() {
         case "happy":
             color = "#FFD700";
             break;
-        case "sad":
+        case "calm":
             color = "#57a5f4";
+            break;
+        case "sad":
+            color = "#bd4af2ff";
             break;
         case "energetic":
             color = "#e94b75";
@@ -846,10 +845,6 @@ function updateVisual() {
         visualiser.style.background = color;
     }
 
-    // OPTIONAL: also affect 3D scene instantly
-    if (scene) {
-        scene.background = new THREE.Color(color);
-    }
 }
 
 //helper function for themes
