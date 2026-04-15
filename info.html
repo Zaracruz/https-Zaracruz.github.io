@@ -53,8 +53,6 @@
     </div>
 </nav>
 
-<script src="script.js"></script>
-
 <main class="info-container">
 
     <h1>How to Use Echoes</h1>
@@ -98,25 +96,30 @@
 
 </main>
 
-<div class="emotion-control">
+<div id="visualiser" class="visualiser"></div>
 
-    <label for="emotionMode">Emotion Mode</label>
-    <select id="emotionMode">
-        <option value="auto">Automatic Emotion Detection</option>
-        <option value="manual">Manual Emotion Selection</option>
-    </select>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js" defer></script>
 
-    <label for="emotionSelect">Choose Emotion</label>
-    <select id="emotionSelect" disabled>
-        <option value="happy">Happy</option>
-        <option value="sad">Sad</option>
-        <option value="energetic">Energetic</option>
-        <option value="upbeat">Upbeat</option>
-    </select>
+<div id="emotionPopup" class="popup hidden">
+    <div class="popup-content">
 
+        <select id="emotionMode">
+            <option value="auto">Auto Detection</option>
+            <option value="manual">Manual</option>
+        </select>
+
+        <button data-emotion="happy">Happy</button>
+        <button data-emotion="sad">Sad</button>
+        <button data-emotion="calm">Calm</button>
+        <button data-emotion="energetic">Energetic</button>
+        <button data-emotion="upbeat">Upbeat</button>
+
+    </div>
 </div>
 
-<div id="visualiser" class="visualiser"></div>
+  </div>
+</div>
 
  
 </body>
