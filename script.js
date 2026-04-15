@@ -19,6 +19,8 @@ const themeColors = {
     minimal: 0x222222
 };
 
+console.log("JS LOADED");
+
 // BPM and emotion detection variables 
 let bpm = 0;
 let lastBeatTime = 0;
@@ -473,7 +475,7 @@ function detectBestEmotion(bpm, energy, pitch) {
 
 
 // Update emotion display
-function updateEmotionDisplay() {
+function updateEmotionDisplay(currentEmotion) {
     const display = document.getElementById('emotion-display');
 
     if (!isListening) {
@@ -491,7 +493,6 @@ function updateEmotionDisplay() {
         return;
     }
 
-    const currentEmotion = detectedEmotions[detectedEmotions.length - 1];
     const emotionData = emotions[currentEmotion];
     const pitch = detectPitch();
 
@@ -588,24 +589,34 @@ function animate() {
 
     const now = Date.now();
 
-    let currentEmotion = null; 
+    let currentEmotion;
 
-    if (now - lastEmotionCheck > 400) {
-        const pitch = detectPitch();
-        const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
+    // ONLY detect if NOT manual mode
+    if (localStorage.getItem("emotionMode") !== "manual") {
 
-        detectedEmotions.push(bestEmotion);
-        if (detectedEmotions.length > 3) detectedEmotions.shift();
+        if (now - lastEmotionCheck > 400) {
+            const pitch = detectPitch();
+            const bestEmotion = detectBestEmotion(bpm, currentEnergy, pitch);
 
-        currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+            detectedEmotions.push(bestEmotion);
+            if (detectedEmotions.length > 3) detectedEmotions.shift();
 
-        updateEmotionDisplay(currentEmotion);
-        lastEmotionCheck = now;
-    } else {
-        currentEmotion = detectedEmotions[detectedEmotions.length - 1];
+            lastEmotionCheck = now;
+        }
     }
 
-    updateBars(currentEmotion);
+// ALWAYS decide emotion here
+currentEmotion = getActiveEmotion();
+
+// Update UI
+updateEmotionDisplay(currentEmotion);
+
+// Update visuals
+updateBars(currentEmotion);
+updateCircular(currentEmotion);
+updateWave(currentEmotion);
+
+   
     updateCircular(currentEmotion);
     updateWave(currentEmotion);
     //updateVisual();
@@ -718,7 +729,6 @@ if (listenBtn) {
 }
 
 //emotion selection
-
 const popup = document.getElementById("emotionPopup");
 const emotionBtn = document.getElementById("emotionBtn");
 const emotionMode = document.getElementById("emotionMode");
@@ -757,6 +767,11 @@ if (emotionMode) {
         mode = emotionMode.value;
         localStorage.setItem("emotionMode", mode);
 
+        const buttons = popup.querySelectorAll("button[data-emotion]");
+        buttons.forEach(btn => {
+            btn.disabled = (mode === "auto");
+        });
+
         updateVisual();
     });
 }
@@ -778,8 +793,22 @@ if (popup) {
 
             updateVisual();
             popup.classList.add("hidden");
+
+            updateBars(manualEmotion);
+            updateWave(manualEmotion);
+            updateCircular(manualEmotion);
         });
     });
+}
+
+function getActiveEmotion() {
+    const mode = localStorage.getItem("emotionMode") || "auto";
+
+    if (mode === "manual") {
+        return localStorage.getItem("manualEmotion") || "happy";
+    }
+
+    return detectedEmotions[detectedEmotions.length - 1] || "happy";
 }
 
 function updateVisual() {
